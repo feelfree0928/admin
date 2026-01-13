@@ -19,7 +19,7 @@ import { Loader2, ChevronDown, AlertCircle, TrendingUp, TrendingDown, CheckCircl
 type BonusType = "cashable" | "postwager" | "cashback" | "sticky" | "freespins" | "raw";
 type CashbackType = "on_win" | "on_loss" | "both" | "fixed_wager";
 type SimulationMode = "standard" | "two_tier";
-type GameName = "bj" | "european_1s" | "european_12s" | "european_18s" | "american_18s" | "french_18s" | "slots" | "digits";
+type GameName = "bj" | "european_1s" | "european_12s" | "european_18s" | "american_18s" | "french_18s" | "baccarat_player" | "baccarat_banker" | "baccarat_tie" | "slots" | "digits";
 type RiskLevel = "very_low" | "low" | "medium" | "high" | "very_high";
 
 interface BonusConfig {
@@ -197,7 +197,7 @@ export default function EVSimulatorPage() {
   // Test backend connection
   const testBackendConnection = async (): Promise<boolean> => {
     try {
-      const response = await fetch("http://5.78.132.169:8000/health");
+      const response = await fetch("http://localhost:8000/health");
       if (response.ok) {
         const data = await response.json();
         return data.status === "healthy";
@@ -242,6 +242,9 @@ export default function EVSimulatorPage() {
       european_18s: "European Roulette (Red/Black)",
       american_18s: "American Roulette (Red/Black)",
       french_18s: "French Roulette (Red/Black)",
+      baccarat_player: "Baccarat (Player)",
+      baccarat_banker: "Baccarat (Banker)",
+      baccarat_tie: "Baccarat (Tie)",
       slots: "Slots",
       digits: "Digits",
     };
@@ -286,7 +289,7 @@ export default function EVSimulatorPage() {
     const isBackendOnline = await testBackendConnection();
     if (!isBackendOnline) {
       setError(
-        "Cannot connect to backend."
+        "Cannot connect to backend. Please ensure the Julia backend is running on http://localhost:8000. Run 'julia server.jl' in the ev-simulator-julia directory."
       );
       setLoading(false);
       return;
@@ -448,7 +451,7 @@ export default function EVSimulatorPage() {
       }
 
       // Make API call
-      const apiUrl = "http://5.78.132.169:8000/api/simulate";
+      const apiUrl = "http://localhost:8000/api/simulate";
       
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -472,7 +475,7 @@ export default function EVSimulatorPage() {
         
         // Add helpful context for 404
         if (response.status === 404) {
-          errorMessage += ". Is the backend running on http://5.78.132.169:8000?";
+          errorMessage += ". Is the backend running on http://localhost:8000?";
         }
         
         throw new Error(errorMessage);
@@ -526,7 +529,8 @@ export default function EVSimulatorPage() {
           <Alert variant="destructive" className="mt-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Cannot connect to backend.
+              Cannot connect to backend at http://localhost:8000. Please ensure the Julia backend is running. 
+              Run <code className="px-1 py-0.5 bg-muted rounded">julia server.jl</code> in the ev-simulator-julia directory.
             </AlertDescription>
           </Alert>
         )}
@@ -803,6 +807,9 @@ export default function EVSimulatorPage() {
                   <SelectItem value="european_18s">European Roulette (Red/Black)</SelectItem>
                   <SelectItem value="american_18s">American Roulette (Red/Black)</SelectItem>
                   <SelectItem value="french_18s">French Roulette (Red/Black)</SelectItem>
+                  <SelectItem value="baccarat_player">Baccarat (Player)</SelectItem>
+                  <SelectItem value="baccarat_banker">Baccarat (Banker)</SelectItem>
+                  <SelectItem value="baccarat_tie">Baccarat (Tie)</SelectItem>
                   <SelectItem value="slots">Slots</SelectItem>
                   <SelectItem value="digits">Digits</SelectItem>
                 </SelectContent>
@@ -941,6 +948,9 @@ export default function EVSimulatorPage() {
                       <SelectItem value="european_18s">European Roulette (Red/Black)</SelectItem>
                       <SelectItem value="american_18s">American Roulette (Red/Black)</SelectItem>
                       <SelectItem value="french_18s">French Roulette (Red/Black)</SelectItem>
+                      <SelectItem value="baccarat_player">Baccarat (Player)</SelectItem>
+                      <SelectItem value="baccarat_banker">Baccarat (Banker)</SelectItem>
+                      <SelectItem value="baccarat_tie">Baccarat (Tie)</SelectItem>
                       <SelectItem value="slots">Slots</SelectItem>
                       <SelectItem value="digits">Digits</SelectItem>
                     </SelectContent>
@@ -1110,6 +1120,9 @@ export default function EVSimulatorPage() {
                       <SelectItem value="european_18s">European Roulette (Red/Black)</SelectItem>
                       <SelectItem value="american_18s">American Roulette (Red/Black)</SelectItem>
                       <SelectItem value="french_18s">French Roulette (Red/Black)</SelectItem>
+                      <SelectItem value="baccarat_player">Baccarat (Player)</SelectItem>
+                      <SelectItem value="baccarat_banker">Baccarat (Banker)</SelectItem>
+                      <SelectItem value="baccarat_tie">Baccarat (Tie)</SelectItem>
                       <SelectItem value="slots">Slots</SelectItem>
                       <SelectItem value="digits">Digits</SelectItem>
                     </SelectContent>
@@ -1234,6 +1247,9 @@ export default function EVSimulatorPage() {
                       <SelectItem value="european_18s">European Roulette (Red/Black)</SelectItem>
                       <SelectItem value="american_18s">American Roulette (Red/Black)</SelectItem>
                       <SelectItem value="french_18s">French Roulette (Red/Black)</SelectItem>
+                      <SelectItem value="baccarat_player">Baccarat (Player)</SelectItem>
+                      <SelectItem value="baccarat_banker">Baccarat (Banker)</SelectItem>
+                      <SelectItem value="baccarat_tie">Baccarat (Tie)</SelectItem>
                       <SelectItem value="slots">Slots</SelectItem>
                       <SelectItem value="digits">Digits</SelectItem>
                     </SelectContent>
