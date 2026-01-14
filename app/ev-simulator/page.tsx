@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, ChevronDown, AlertCircle, TrendingUp, TrendingDown, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, ChevronDown, AlertCircle, TrendingUp, TrendingDown, CheckCircle2, XCircle, Lock, Unlock } from "lucide-react";
 
 // ============================================================================
 // TYPE DEFINITIONS (matching backend API from src/Types.jl and src/RequestParser.jl)
@@ -19,7 +19,8 @@ import { Loader2, ChevronDown, AlertCircle, TrendingUp, TrendingDown, CheckCircl
 type BonusType = "cashable" | "postwager" | "cashback" | "sticky" | "freespins" | "raw";
 type CashbackType = "on_win" | "on_loss" | "both" | "fixed_wager";
 type SimulationMode = "standard" | "two_tier";
-type GameName = "bj" | "european_1s" | "european_12s" | "european_18s" | "american_18s" | "french_18s" | "baccarat_player" | "baccarat_banker" | "baccarat_tie" | "slots" | "digits";
+type GameName = "bj" | "european_1s" | "european_12s" | "european_18s" | "american_18s" | "french_18s" | "european_2s" | "european_3s" | "european_4s" | "european_6s" | "baccarat_player" | "baccarat_banker" | "baccarat_tie" | "slots" | "digits";
+type GameCategory = "roulette" | "baccarat" | "blackjack" | "slots" | "digits";
 type RiskLevel = "very_low" | "low" | "medium" | "high" | "very_high";
 
 interface BonusConfig {
@@ -133,7 +134,6 @@ export default function EVSimulatorPage() {
   const [cashbackCap, setCashbackCap] = useState<number>(50);
   const [cashbackAsBonus, setCashbackAsBonus] = useState<boolean>(false);
   const [cashbackWageringRequirement, setCashbackWageringRequirement] = useState<number>(0);
-  const [cashableOnLoss, setCashableOnLoss] = useState<boolean>(false);
   const [freespinsCount, setFreespinsCount] = useState<number>(0);
   const [freespinsBetSize, setFreespinsBetSize] = useState<number>(0);
   const [freespinsRollover, setFreespinsRollover] = useState<boolean>(false);
@@ -142,43 +142,53 @@ export default function EVSimulatorPage() {
 
   // Game 1 state
   const [game1Name, setGame1Name] = useState<GameName>("bj");
+  const [game1Category, setGame1Category] = useState<GameCategory>("blackjack");
+  const [game1Type, setGame1Type] = useState<string>("");
   const [game1BetSize, setGame1BetSize] = useState<number>(5.0);
   const [game1TimePerBet, setGame1TimePerBet] = useState<number>(3.0);
   const [game1Weighting, setGame1Weighting] = useState<number>(100.0);
   const [game1HouseEdge, setGame1HouseEdge] = useState<number | null>(null);
-  const [game1DigitsType, setGame1DigitsType] = useState<string>("");
+  const [game1HouseEdgeLocked, setGame1HouseEdgeLocked] = useState<boolean>(true);
+  const [game1DigitsType, setGame1DigitsType] = useState<string>("0 & Under");
   const [game1Risk, setGame1Risk] = useState<RiskLevel | null>(null);
-  const [game1HouseEdgeEnabled, setGame1HouseEdgeEnabled] = useState<boolean>(false);
 
   // Game 2 state
   const [game2Enabled, setGame2Enabled] = useState<boolean>(false);
   const [game2Name, setGame2Name] = useState<GameName>("slots");
+  const [game2Category, setGame2Category] = useState<GameCategory>("slots");
+  const [game2Type, setGame2Type] = useState<string>("");
   const [game2BetSize, setGame2BetSize] = useState<number>(2.0);
   const [game2TimePerBet, setGame2TimePerBet] = useState<number>(3.0);
   const [game2Weighting, setGame2Weighting] = useState<number>(100.0);
   const [game2SwitchBalance, setGame2SwitchBalance] = useState<number>(400);
   const [game2HouseEdge, setGame2HouseEdge] = useState<number | null>(null);
-  const [game2DigitsType, setGame2DigitsType] = useState<string>("");
+  const [game2HouseEdgeLocked, setGame2HouseEdgeLocked] = useState<boolean>(true);
+  const [game2DigitsType, setGame2DigitsType] = useState<string>("0 & Under");
   const [game2Risk, setGame2Risk] = useState<RiskLevel | null>(null);
-  const [game2HouseEdgeEnabled, setGame2HouseEdgeEnabled] = useState<boolean>(false);
 
   // Pre-coverplay state
   const [preCoverplayEnabled, setPreCoverplayEnabled] = useState<boolean>(false);
   const [preCoverplayGame, setPreCoverplayGame] = useState<GameName>("slots");
+  const [preCoverplayCategory, setPreCoverplayCategory] = useState<GameCategory>("slots");
+  const [preCoverplayType, setPreCoverplayType] = useState<string>("");
   const [preCoverplayBetSize, setPreCoverplayBetSize] = useState<number>(1.0);
   const [preCoverplayNumSpins, setPreCoverplayNumSpins] = useState<number>(10);
   const [preCoverplayRisk, setPreCoverplayRisk] = useState<RiskLevel | null>(null);
   const [preCoverplayHouseEdge, setPreCoverplayHouseEdge] = useState<number | null>(null);
-  const [preCoverplayHouseEdgeEnabled, setPreCoverplayHouseEdgeEnabled] = useState<boolean>(false);
+  const [preCoverplayHouseEdgeLocked, setPreCoverplayHouseEdgeLocked] = useState<boolean>(true);
+  const [preCoverplayDigitsType, setPreCoverplayDigitsType] = useState<string>("0 & Under");
 
   // Post-coverplay state
   const [postCoverplayEnabled, setPostCoverplayEnabled] = useState<boolean>(false);
   const [postCoverplayGame, setPostCoverplayGame] = useState<GameName>("slots");
+  const [postCoverplayCategory, setPostCoverplayCategory] = useState<GameCategory>("slots");
+  const [postCoverplayType, setPostCoverplayType] = useState<string>("");
   const [postCoverplayBetSize, setPostCoverplayBetSize] = useState<number>(1.0);
   const [postCoverplayNumSpins, setPostCoverplayNumSpins] = useState<number>(10);
   const [postCoverplayRisk, setPostCoverplayRisk] = useState<RiskLevel | null>(null);
   const [postCoverplayHouseEdge, setPostCoverplayHouseEdge] = useState<number | null>(null);
-  const [postCoverplayHouseEdgeEnabled, setPostCoverplayHouseEdgeEnabled] = useState<boolean>(false);
+  const [postCoverplayHouseEdgeLocked, setPostCoverplayHouseEdgeLocked] = useState<boolean>(true);
+  const [postCoverplayDigitsType, setPostCoverplayDigitsType] = useState<string>("0 & Under");
 
   // Simulation parameters
   const [numSessions, setNumSessions] = useState<number>(1000000);
@@ -237,11 +247,15 @@ export default function EVSimulatorPage() {
   const getGameDisplayName = (gameName: GameName): string => {
     const gameNames: Record<GameName, string> = {
       bj: "Blackjack",
-      european_1s: "European Roulette (Single)",
-      european_12s: "European Roulette (Column/Dozen)",
-      european_18s: "European Roulette (Red/Black)",
-      american_18s: "American Roulette (Red/Black)",
-      french_18s: "French Roulette (Red/Black)",
+      european_1s: "Roulette European 1s",
+      european_12s: "Roulette European 12s",
+      european_18s: "Roulette European 18s",
+      american_18s: "Roulette American 18s",
+      french_18s: "Roulette French 18s",
+      european_2s: "Roulette European 2s",
+      european_3s: "Roulette European 3s",
+      european_4s: "Roulette European 4s",
+      european_6s: "Roulette European 6s",
       baccarat_player: "Baccarat (Player)",
       baccarat_banker: "Baccarat (Banker)",
       baccarat_tie: "Baccarat (Tie)",
@@ -250,6 +264,334 @@ export default function EVSimulatorPage() {
     };
     return gameNames[gameName] || gameName;
   };
+
+  // Helper functions for game category/type mapping
+  const getGameCategoryFromName = (gameName: GameName): GameCategory => {
+    if (gameName === "bj") return "blackjack";
+    if (gameName.startsWith("european_") || gameName.startsWith("american_") || gameName.startsWith("french_")) return "roulette";
+    if (gameName.startsWith("baccarat_")) return "baccarat";
+    if (gameName === "slots") return "slots";
+    if (gameName === "digits") return "digits";
+    return "blackjack"; // default
+  };
+
+  const getGameTypeFromName = (gameName: GameName, category: GameCategory, digitsType?: string): string => {
+    if (category === "roulette") {
+      const typeMap: Record<string, string> = {
+        european_1s: "European 1s",
+        european_2s: "European 2s",
+        european_3s: "European 3s",
+        european_4s: "European 4s",
+        european_6s: "European 6s",
+        european_12s: "European 12s",
+        european_18s: "European 18s",
+        american_18s: "American 18s",
+        french_18s: "French 18s",
+      };
+      return typeMap[gameName] || "";
+    }
+    if (category === "baccarat") {
+      const typeMap: Record<string, string> = {
+        baccarat_player: "Player",
+        baccarat_banker: "Banker",
+        baccarat_tie: "Tie",
+      };
+      return typeMap[gameName] || "";
+    }
+    if (category === "digits") {
+      return digitsType || game1DigitsType || "0 & Under"; // For digits, use the provided digits type or fallback
+    }
+    return ""; // blackjack and slots have no types
+  };
+
+  const getGameNameFromCategoryAndType = (category: GameCategory, type: string, digitsType?: string): GameName => {
+    if (category === "blackjack") return "bj";
+    if (category === "slots") return "slots";
+    if (category === "digits") return "digits";
+    
+    if (category === "roulette") {
+      const typeMap: Record<string, GameName> = {
+        "European 1s": "european_1s",
+        "European 2s": "european_2s",
+        "European 3s": "european_3s",
+        "European 4s": "european_4s",
+        "European 6s": "european_6s",
+        "European 12s": "european_12s",
+        "European 18s": "european_18s",
+        "American 18s": "american_18s",
+        "French 18s": "french_18s",
+      };
+      return typeMap[type] || "european_18s";
+    }
+    
+    if (category === "baccarat") {
+      const typeMap: Record<string, GameName> = {
+        "Player": "baccarat_player",
+        "Banker": "baccarat_banker",
+        "Tie": "baccarat_tie",
+      };
+      return typeMap[type] || "baccarat_player";
+    }
+    
+    return "bj"; // default
+  };
+
+  // Generate digits options (0-100)
+  const digitsOptions = Array.from({ length: 101 }, (_, i) => `${i} & Under`);
+
+  // Get default game type for a category
+  const getDefaultGameType = (category: GameCategory): string => {
+    switch (category) {
+      case "roulette":
+        return "European 1s";
+      case "baccarat":
+        return "Player";
+      case "blackjack":
+        return ""; // No types for blackjack
+      case "slots":
+        return "medium"; // Default risk level
+      case "digits":
+        return "0 & Under";
+      default:
+        return "";
+    }
+  };
+
+  // Get default house edge for a game name
+  const getDefaultHouseEdge = (gameName: GameName): number | null => {
+    switch (gameName) {
+      case "bj":
+        return 0.46;
+      case "european_1s":
+        return 2.7;
+      case "european_12s":
+        return 2.7;
+      case "european_18s":
+        return 2.7;
+      case "european_2s":
+        return 2.703;
+      case "european_3s":
+        return 2.703;
+      case "european_4s":
+        return 2.703;
+      case "european_6s":
+        return 2.703;
+      case "american_18s":
+        return 5.26;
+      case "french_18s":
+        return 1.35;
+      case "baccarat_player":
+        return 1.060;
+      case "baccarat_banker":
+        return 1.050;
+      case "baccarat_tie":
+        return 14.360;
+      case "slots":
+        return 3.0;
+      case "digits":
+        return null; // Variable based on threshold
+      default:
+        return null;
+    }
+  };
+
+  // Set default type if empty when category is set
+  useEffect(() => {
+    if (game1Type === "" && game1Category !== "blackjack") {
+      const defaultType = getDefaultGameType(game1Category);
+      if (game1Category === "slots") {
+        if (!game1Risk) {
+          setGame1Risk(defaultType as RiskLevel);
+        }
+      } else if (game1Category === "digits") {
+        setGame1Type(defaultType);
+        setGame1DigitsType(defaultType);
+      } else {
+        setGame1Type(defaultType);
+      }
+    }
+  }, [game1Category, game1Type, game1Risk]);
+
+  // Sync game1Name with category and type
+  useEffect(() => {
+    if (game1Category === "digits") {
+      setGame1Name("digits");
+      setGame1DigitsType(game1Type || "0 & Under");
+    } else {
+      const newName = getGameNameFromCategoryAndType(game1Category, game1Type);
+      setGame1Name(newName);
+      setGame1DigitsType("");
+    }
+  }, [game1Category, game1Type]);
+
+  // Reset house edge to default when game1Name changes
+  useEffect(() => {
+    setGame1HouseEdge(null);
+  }, [game1Name]);
+
+  // Initialize game1Category and game1Type from game1Name (on mount only)
+  useEffect(() => {
+    const category = getGameCategoryFromName(game1Name);
+    const type = getGameTypeFromName(game1Name, category, game1DigitsType);
+    setGame1Category(category);
+    if (category === "digits") {
+      setGame1Type(game1DigitsType || "0 & Under");
+    } else {
+      setGame1Type(type);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
+
+  // Set default type if empty when category is set
+  useEffect(() => {
+    if (game2Type === "" && game2Category !== "blackjack") {
+      const defaultType = getDefaultGameType(game2Category);
+      if (game2Category === "slots") {
+        if (!game2Risk) {
+          setGame2Risk(defaultType as RiskLevel);
+        }
+      } else if (game2Category === "digits") {
+        setGame2Type(defaultType);
+        setGame2DigitsType(defaultType);
+      } else {
+        setGame2Type(defaultType);
+      }
+    }
+  }, [game2Category, game2Type, game2Risk]);
+
+  // Sync game2Name with category and type
+  useEffect(() => {
+    if (game2Category === "digits") {
+      setGame2Name("digits");
+      setGame2DigitsType(game2Type || "0 & Under");
+    } else {
+      const newName = getGameNameFromCategoryAndType(game2Category, game2Type);
+      setGame2Name(newName);
+      setGame2DigitsType("");
+    }
+  }, [game2Category, game2Type]);
+
+  // Reset house edge to default when game2Name changes
+  useEffect(() => {
+    setGame2HouseEdge(null);
+    setGame2HouseEdgeLocked(true); // Lock when game changes
+  }, [game2Name]);
+
+  // Initialize game2Category and game2Type from game2Name (on mount only)
+  useEffect(() => {
+    const category = getGameCategoryFromName(game2Name);
+    const type = getGameTypeFromName(game2Name, category, game2DigitsType);
+    setGame2Category(category);
+    if (category === "digits") {
+      setGame2Type(game2DigitsType || "0 & Under");
+    } else {
+      setGame2Type(type);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
+
+  // Disable Two-Tier Strategy when bonus type is not "Deposit Bonuses" (cashable)
+  useEffect(() => {
+    if (bonusType !== "cashable" && game2Enabled) {
+      setGame2Enabled(false);
+    }
+  }, [bonusType, game2Enabled]);
+
+  // Set default type if empty when category is set
+  useEffect(() => {
+    if (preCoverplayType === "" && preCoverplayCategory !== "blackjack") {
+      const defaultType = getDefaultGameType(preCoverplayCategory);
+      if (preCoverplayCategory === "slots") {
+        if (!preCoverplayRisk) {
+          setPreCoverplayRisk(defaultType as RiskLevel);
+        }
+      } else if (preCoverplayCategory === "digits") {
+        setPreCoverplayType(defaultType);
+        setPreCoverplayDigitsType(defaultType);
+      } else {
+        setPreCoverplayType(defaultType);
+      }
+    }
+  }, [preCoverplayCategory, preCoverplayType, preCoverplayRisk]);
+
+  // Sync preCoverplayGame with category and type
+  useEffect(() => {
+    if (preCoverplayCategory === "digits") {
+      setPreCoverplayGame("digits");
+      setPreCoverplayDigitsType(preCoverplayType || "0 & Under");
+    } else {
+      const newName = getGameNameFromCategoryAndType(preCoverplayCategory, preCoverplayType);
+      setPreCoverplayGame(newName);
+      setPreCoverplayDigitsType("");
+    }
+  }, [preCoverplayCategory, preCoverplayType]);
+
+  // Reset house edge to default when preCoverplayGame changes
+  useEffect(() => {
+    setPreCoverplayHouseEdge(null);
+    setPreCoverplayHouseEdgeLocked(true); // Lock when game changes
+  }, [preCoverplayGame]);
+
+  // Initialize preCoverplayCategory and preCoverplayType from preCoverplayGame (on mount only)
+  useEffect(() => {
+    const category = getGameCategoryFromName(preCoverplayGame);
+    const type = getGameTypeFromName(preCoverplayGame, category, preCoverplayDigitsType);
+    setPreCoverplayCategory(category);
+    if (category === "digits") {
+      setPreCoverplayType(preCoverplayDigitsType || "0 & Under");
+    } else {
+      setPreCoverplayType(type);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
+
+  // Set default type if empty when category is set
+  useEffect(() => {
+    if (postCoverplayType === "" && postCoverplayCategory !== "blackjack") {
+      const defaultType = getDefaultGameType(postCoverplayCategory);
+      if (postCoverplayCategory === "slots") {
+        if (!postCoverplayRisk) {
+          setPostCoverplayRisk(defaultType as RiskLevel);
+        }
+      } else if (postCoverplayCategory === "digits") {
+        setPostCoverplayType(defaultType);
+        setPostCoverplayDigitsType(defaultType);
+      } else {
+        setPostCoverplayType(defaultType);
+      }
+    }
+  }, [postCoverplayCategory, postCoverplayType, postCoverplayRisk]);
+
+  // Sync postCoverplayGame with category and type
+  useEffect(() => {
+    if (postCoverplayCategory === "digits") {
+      setPostCoverplayGame("digits");
+      setPostCoverplayDigitsType(postCoverplayType || "0 & Under");
+    } else {
+      const newName = getGameNameFromCategoryAndType(postCoverplayCategory, postCoverplayType);
+      setPostCoverplayGame(newName);
+      setPostCoverplayDigitsType("");
+    }
+  }, [postCoverplayCategory, postCoverplayType]);
+
+  // Reset house edge to default when postCoverplayGame changes
+  useEffect(() => {
+    setPostCoverplayHouseEdge(null);
+    setPostCoverplayHouseEdgeLocked(true); // Lock when game changes
+  }, [postCoverplayGame]);
+
+  // Initialize postCoverplayCategory and postCoverplayType from postCoverplayGame (on mount only)
+  useEffect(() => {
+    const category = getGameCategoryFromName(postCoverplayGame);
+    const type = getGameTypeFromName(postCoverplayGame, category, postCoverplayDigitsType);
+    setPostCoverplayCategory(category);
+    if (category === "digits") {
+      setPostCoverplayType(postCoverplayDigitsType || "0 & Under");
+    } else {
+      setPostCoverplayType(type);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
 
   const validateForm = (): string | null => {
     if (deposit <= 0) return "Deposit must be greater than 0";
@@ -307,10 +649,6 @@ export default function EVSimulatorPage() {
         bonusConfig.wagering = wagering;
       }
 
-      if (bonusType === "cashable") {
-        bonusConfig.cashable_on_loss = cashableOnLoss;
-      }
-
       if (bonusType === "cashback") {
         bonusConfig.cashback_type = cashbackType;
         if (cashbackType === "fixed_wager") {
@@ -358,7 +696,7 @@ export default function EVSimulatorPage() {
         game1Config.digits_type = game1DigitsType;
       }
 
-      if (game1HouseEdgeEnabled && game1HouseEdge !== null) {
+      if (game1HouseEdge !== null) {
         game1Config.house_edge = game1HouseEdge;
       }
 
@@ -381,7 +719,7 @@ export default function EVSimulatorPage() {
           game2Config.digits_type = game2DigitsType;
         }
 
-        if (game2HouseEdgeEnabled && game2HouseEdge !== null) {
+        if (game2HouseEdge !== null) {
           game2Config.house_edge = game2HouseEdge;
         }
       }
@@ -400,7 +738,11 @@ export default function EVSimulatorPage() {
           preCoverplayConfig.risk = preCoverplayRisk;
         }
 
-        if (preCoverplayHouseEdgeEnabled && preCoverplayHouseEdge !== null) {
+        if (preCoverplayGame === "digits" && preCoverplayDigitsType) {
+          // Note: CoverplayConfig doesn't have digits_type, but we'll handle it if needed
+        }
+
+        if (preCoverplayHouseEdge !== null) {
           preCoverplayConfig.house_edge = preCoverplayHouseEdge;
         }
       }
@@ -419,7 +761,11 @@ export default function EVSimulatorPage() {
           postCoverplayConfig.risk = postCoverplayRisk;
         }
 
-        if (postCoverplayHouseEdgeEnabled && postCoverplayHouseEdge !== null) {
+        if (postCoverplayGame === "digits" && postCoverplayDigitsType) {
+          // Note: CoverplayConfig doesn't have digits_type, but we'll handle it if needed
+        }
+
+        if (postCoverplayHouseEdge !== null) {
           postCoverplayConfig.house_edge = postCoverplayHouseEdge;
         }
       }
@@ -550,7 +896,7 @@ export default function EVSimulatorPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="cashable">Cashable</SelectItem>
+                  <SelectItem value="cashable">Deposit Bonuses</SelectItem>
                   <SelectItem value="postwager">Post-Wager</SelectItem>
                   <SelectItem value="cashback">Cashback</SelectItem>
                   {/* <SelectItem value="sticky">Sticky</SelectItem>
@@ -599,20 +945,6 @@ export default function EVSimulatorPage() {
               </>
             )}
           </div>
-
-          {/* CASHABLE SPECIFIC */}
-          {bonusType === "cashable" && (
-            <div className="flex items-center space-x-2 pt-2">
-              <Checkbox
-                id="cashableOnLoss"
-                checked={cashableOnLoss}
-                onCheckedChange={(checked) => setCashableOnLoss(checked as boolean)}
-              />
-              <Label htmlFor="cashableOnLoss" className="font-normal cursor-pointer">
-                Bonus only awarded on loss (cashable_on_loss)
-              </Label>
-            </div>
-          )}
 
           {/* CASHBACK SPECIFIC */}
           {bonusType === "cashback" && (
@@ -790,173 +1122,337 @@ export default function EVSimulatorPage() {
         {/* GAME 1 CONFIGURATION */}
         <Card>
           <CardHeader>
-            <CardTitle>Game 1 Configuration</CardTitle>
+            <CardTitle>Game 1</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Line 1: Game and Game Type */}
             <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="game1Name">Game</Label>
-              <Select value={game1Name} onValueChange={(v) => setGame1Name(v as GameName)}>
-                <SelectTrigger id="game1Name">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bj">Blackjack</SelectItem>
-                  <SelectItem value="european_1s">European Roulette (Single)</SelectItem>
-                  <SelectItem value="european_12s">European Roulette (Column/Dozen)</SelectItem>
-                  <SelectItem value="european_18s">European Roulette (Red/Black)</SelectItem>
-                  <SelectItem value="american_18s">American Roulette (Red/Black)</SelectItem>
-                  <SelectItem value="french_18s">French Roulette (Red/Black)</SelectItem>
-                  <SelectItem value="baccarat_player">Baccarat (Player)</SelectItem>
-                  <SelectItem value="baccarat_banker">Baccarat (Banker)</SelectItem>
-                  <SelectItem value="baccarat_tie">Baccarat (Tie)</SelectItem>
-                  <SelectItem value="slots">Slots</SelectItem>
-                  <SelectItem value="digits">Digits</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Label htmlFor="game1Category">Game</Label>
+                <Select value={game1Category} onValueChange={(v) => {
+                  const newCategory = v as GameCategory;
+                  setGame1Category(newCategory);
+                  const defaultType = getDefaultGameType(newCategory);
+                  if (newCategory === "slots") {
+                    setGame1Risk(defaultType as RiskLevel);
+                  } else if (newCategory === "digits") {
+                    setGame1Type(defaultType);
+                    setGame1DigitsType(defaultType);
+                  } else {
+                    setGame1Type(defaultType);
+                  }
+                }}>
+                  <SelectTrigger id="game1Category">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="roulette">Roulette</SelectItem>
+                    <SelectItem value="baccarat">Baccarat</SelectItem>
+                    <SelectItem value="blackjack">Blackjack</SelectItem>
+                    <SelectItem value="slots">Slots</SelectItem>
+                    <SelectItem value="digits">Digits</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="game1Type">
+                  {game1Category === "slots" ? "Risk Level" : "Game Type"}
+                </Label>
+                {game1Category === "roulette" && (
+                  <Select value={game1Type} onValueChange={setGame1Type}>
+                    <SelectTrigger id="game1Type">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="European 1s">European 1s</SelectItem>
+                      <SelectItem value="European 2s">European 2s</SelectItem>
+                      <SelectItem value="European 3s">European 3s</SelectItem>
+                      <SelectItem value="European 4s">European 4s</SelectItem>
+                      <SelectItem value="European 6s">European 6s</SelectItem>
+                      <SelectItem value="European 12s">European 12s</SelectItem>
+                      <SelectItem value="European 18s">European 18s</SelectItem>
+                      <SelectItem value="American 18s">American 18s</SelectItem>
+                      <SelectItem value="French 18s">French 18s</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                {game1Category === "baccarat" && (
+                  <Select value={game1Type} onValueChange={setGame1Type}>
+                    <SelectTrigger id="game1Type">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Player">Player</SelectItem>
+                      <SelectItem value="Banker">Banker</SelectItem>
+                      <SelectItem value="Tie">Tie</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                {game1Category === "blackjack" && (
+                  <Input
+                    id="game1Type"
+                    value=""
+                    disabled
+                    placeholder="No types available"
+                    className="bg-muted"
+                  />
+                )}
+                {game1Category === "slots" && (
+                  <Select
+                    value={game1Risk || "medium"}
+                    onValueChange={(v) => setGame1Risk(v as RiskLevel)}
+                  >
+                    <SelectTrigger id="game1Risk">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="very_low">Very Low (0.25x)</SelectItem>
+                      <SelectItem value="low">Low (0.5x)</SelectItem>
+                      <SelectItem value="medium">Medium (1.0x)</SelectItem>
+                      <SelectItem value="high">High (2.0x)</SelectItem>
+                      <SelectItem value="very_high">Very High (4.0x)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                {game1Category === "digits" && (
+                  <Select value={game1Type} onValueChange={setGame1Type}>
+                    <SelectTrigger id="game1Type">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {digitsOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="game1BetSize">Bet Size ($)</Label>
-              <Input
-                id="game1BetSize"
-                type="number"
-                step="0.01"
-                value={game1BetSize}
-                onChange={(e) => setGame1BetSize(Number(e.target.value))}
-                placeholder="5.0"
-              />
+            {/* Line 2: Bet Size and Time Per Bet */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="game1BetSize">Bet Size ($)</Label>
+                <Input
+                  id="game1BetSize"
+                  type="number"
+                  step="0.01"
+                  value={game1BetSize}
+                  onChange={(e) => setGame1BetSize(Number(e.target.value))}
+                  placeholder="5.0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="game1TimePerBet">Time Per Bet (seconds)</Label>
+                <Input
+                  id="game1TimePerBet"
+                  type="number"
+                  step="0.1"
+                  value={game1TimePerBet}
+                  onChange={(e) => setGame1TimePerBet(Number(e.target.value))}
+                  placeholder="3.0"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="game1TimePerBet">Time Per Bet (seconds)</Label>
-              <Input
-                id="game1TimePerBet"
-                type="number"
-                step="0.1"
-                value={game1TimePerBet}
-                onChange={(e) => setGame1TimePerBet(Number(e.target.value))}
-                placeholder="3.0"
-              />
+            {/* Line 3: Game Weighting and House Edge */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="game1Weighting">Game Weighting (%)</Label>
+                <Input
+                  id="game1Weighting"
+                  type="number"
+                  step="0.1"
+                  value={game1Weighting}
+                  onChange={(e) => setGame1Weighting(Number(e.target.value))}
+                  placeholder="100.0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="relative">
+                  <Label htmlFor="game1HouseEdge">House Edge (%)</Label>
+                  <button
+                    type="button"
+                    onClick={() => setGame1HouseEdgeLocked(!game1HouseEdgeLocked)}
+                    className="absolute top-0 right-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {game1HouseEdgeLocked ? (
+                      <>
+                        <Lock className="h-3 w-3" />
+                        <span>Edit</span>
+                      </>
+                    ) : (
+                      <>
+                        <Unlock className="h-3 w-3" />
+                        <span>Edit</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                <Input
+                  id="game1HouseEdge"
+                  type="number"
+                  step="0.01"
+                  disabled={game1HouseEdgeLocked}
+                  value={game1HouseEdge !== null ? game1HouseEdge : (getDefaultHouseEdge(game1Name) ?? "")}
+                  onChange={(e) => setGame1HouseEdge(e.target.value ? Number(e.target.value) : null)}
+                  placeholder={getDefaultHouseEdge(game1Name) !== null ? "" : "Variable"}
+                  className={game1HouseEdgeLocked ? "bg-muted cursor-not-allowed" : ""}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {getDefaultHouseEdge(game1Name) !== null 
+                    ? `Default value (${getDefaultHouseEdge(game1Name)}%)`
+                    : "Variable based on threshold"}
+                </p>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="game1Weighting">Game Weighting (%)</Label>
-              <Input
-                id="game1Weighting"
-                type="number"
-                step="0.1"
-                value={game1Weighting}
-                onChange={(e) => setGame1Weighting(Number(e.target.value))}
-                placeholder="100.0"
-              />
-            </div>
-          </div>
 
-          {/* SLOTS SPECIFIC */}
-          {game1Name === "slots" && (
-            <div className="space-y-2 pt-4 border-t">
-              <Label htmlFor="game1Risk">Risk Level</Label>
-              <Select
-                value={game1Risk || "medium"}
-                onValueChange={(v) => setGame1Risk(v as RiskLevel)}
-              >
-                <SelectTrigger id="game1Risk">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="very_low">Very Low (0.25x)</SelectItem>
-                  <SelectItem value="low">Low (0.5x)</SelectItem>
-                  <SelectItem value="medium">Medium (1.0x)</SelectItem>
-                  <SelectItem value="high">High (2.0x)</SelectItem>
-                  <SelectItem value="very_high">Very High (4.0x)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* DIGITS SPECIFIC */}
-          {game1Name === "digits" && (
-            <div className="space-y-2 pt-4 border-t">
-              <Label htmlFor="game1DigitsType">Digits Type (e.g., &quot;10 & Under&quot;)</Label>
-              <Input
-                id="game1DigitsType"
-                type="text"
-                value={game1DigitsType}
-                onChange={(e) => setGame1DigitsType(e.target.value)}
-                placeholder="10 & Under"
-              />
-            </div>
-          )}
-
-          {/* HOUSE EDGE OVERRIDE */}
-          <Collapsible open={game1HouseEdgeEnabled} onOpenChange={setGame1HouseEdgeEnabled}>
-            <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-              <ChevronDown className="h-4 w-4" />
-              Custom House Edge
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pt-4 space-y-2">
-              <Label htmlFor="game1HouseEdge">House Edge (%)</Label>
-              <Input
-                id="game1HouseEdge"
-                type="number"
-                step="0.01"
-                value={game1HouseEdge || ""}
-                onChange={(e) => setGame1HouseEdge(e.target.value ? Number(e.target.value) : null)}
-                placeholder="e.g., 2.0"
-              />
-              <p className="text-xs text-muted-foreground">
-                Override the default house edge for this game
-              </p>
-            </CollapsibleContent>
-          </Collapsible>
         </CardContent>
       </Card>
 
       {/* GAME 2 CONFIGURATION */}
-      <Card className="mb-6">
+      <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Game 2 Configuration</CardTitle>
+            <CardTitle>Game 2</CardTitle>
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="game2Enabled"
                 checked={game2Enabled}
+                disabled={bonusType !== "cashable"}
                 onCheckedChange={(checked) => setGame2Enabled(checked as boolean)}
               />
-              <Label htmlFor="game2Enabled" className="font-normal cursor-pointer">
+              <Label 
+                htmlFor="game2Enabled" 
+                className={`font-normal ${bonusType !== "cashable" ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer"}`}
+              >
                 Enable Two-Tier Strategy
+                {bonusType !== "cashable" && (
+                  <span className="text-xs block text-muted-foreground mt-1">
+                    (Only available with Deposit Bonuses)
+                  </span>
+                )}
               </Label>
             </div>
           </div>
         </CardHeader>
         {game2Enabled ? (
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Line 1: Game and Game Type */}
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="game2Name">Game</Label>
-                  <Select value={game2Name} onValueChange={(v) => setGame2Name(v as GameName)}>
-                    <SelectTrigger id="game2Name">
+                  <Label htmlFor="game2Category">Game</Label>
+                  <Select value={game2Category} onValueChange={(v) => {
+                    const newCategory = v as GameCategory;
+                    setGame2Category(newCategory);
+                    const defaultType = getDefaultGameType(newCategory);
+                    if (newCategory === "slots") {
+                      setGame2Risk(defaultType as RiskLevel);
+                    } else if (newCategory === "digits") {
+                      setGame2Type(defaultType);
+                      setGame2DigitsType(defaultType);
+                    } else {
+                      setGame2Type(defaultType);
+                    }
+                  }}>
+                    <SelectTrigger id="game2Category">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="bj">Blackjack</SelectItem>
-                      <SelectItem value="european_1s">European Roulette (Single)</SelectItem>
-                      <SelectItem value="european_12s">
-                        European Roulette (Column/Dozen)
-                      </SelectItem>
-                      <SelectItem value="european_18s">European Roulette (Red/Black)</SelectItem>
-                      <SelectItem value="american_18s">American Roulette (Red/Black)</SelectItem>
-                      <SelectItem value="french_18s">French Roulette (Red/Black)</SelectItem>
-                      <SelectItem value="baccarat_player">Baccarat (Player)</SelectItem>
-                      <SelectItem value="baccarat_banker">Baccarat (Banker)</SelectItem>
-                      <SelectItem value="baccarat_tie">Baccarat (Tie)</SelectItem>
+                      <SelectItem value="roulette">Roulette</SelectItem>
+                      <SelectItem value="baccarat">Baccarat</SelectItem>
+                      <SelectItem value="blackjack">Blackjack</SelectItem>
                       <SelectItem value="slots">Slots</SelectItem>
                       <SelectItem value="digits">Digits</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="game2Type">
+                    {game2Category === "slots" ? "Risk Level" : "Game Type"}
+                  </Label>
+                  {game2Category === "roulette" && (
+                    <Select value={game2Type} onValueChange={setGame2Type}>
+                      <SelectTrigger id="game2Type">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="European 1s">European 1s</SelectItem>
+                        <SelectItem value="European 2s">European 2s</SelectItem>
+                        <SelectItem value="European 3s">European 3s</SelectItem>
+                        <SelectItem value="European 4s">European 4s</SelectItem>
+                        <SelectItem value="European 6s">European 6s</SelectItem>
+                        <SelectItem value="European 12s">European 12s</SelectItem>
+                        <SelectItem value="European 18s">European 18s</SelectItem>
+                        <SelectItem value="American 18s">American 18s</SelectItem>
+                        <SelectItem value="French 18s">French 18s</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {game2Category === "baccarat" && (
+                    <Select value={game2Type} onValueChange={setGame2Type}>
+                      <SelectTrigger id="game2Type">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Player">Player</SelectItem>
+                        <SelectItem value="Banker">Banker</SelectItem>
+                        <SelectItem value="Tie">Tie</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {game2Category === "blackjack" && (
+                    <Input
+                      id="game2Type"
+                      value=""
+                      disabled
+                      placeholder="No types available"
+                      className="bg-muted"
+                    />
+                  )}
+                  {game2Category === "slots" && (
+                    <Select
+                      value={game2Risk || "medium"}
+                      onValueChange={(v) => setGame2Risk(v as RiskLevel)}
+                    >
+                      <SelectTrigger id="game2Risk">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="very_low">Very Low (0.25x)</SelectItem>
+                        <SelectItem value="low">Low (0.5x)</SelectItem>
+                        <SelectItem value="medium">Medium (1.0x)</SelectItem>
+                        <SelectItem value="high">High (2.0x)</SelectItem>
+                        <SelectItem value="very_high">Very High (4.0x)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {game2Category === "digits" && (
+                    <Select value={game2Type} onValueChange={setGame2Type}>
+                      <SelectTrigger id="game2Type">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {digitsOptions.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              </div>
+
+              {/* Line 2: Bet Size and Time Per Bet */}
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="game2BetSize">Bet Size ($)</Label>
                   <Input
@@ -980,7 +1476,10 @@ export default function EVSimulatorPage() {
                     placeholder="3.0"
                   />
                 </div>
+              </div>
 
+              {/* Line 3: Game Weighting and House Edge */}
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="game2Weighting">Game Weighting (%)</Label>
                   <Input
@@ -994,78 +1493,44 @@ export default function EVSimulatorPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="game2SwitchBalance">Switch Balance ($)</Label>
-                  <Input
-                    id="game2SwitchBalance"
-                    type="number"
-                    value={game2SwitchBalance}
-                    onChange={(e) => setGame2SwitchBalance(Number(e.target.value))}
-                    placeholder="400"
-                  />
-                </div>
-              </div>
-
-              {/* SLOTS SPECIFIC */}
-              {game2Name === "slots" && (
-                <div className="space-y-2 pt-4 border-t">
-                  <Label htmlFor="game2Risk">Risk Level</Label>
-                  <Select
-                    value={game2Risk || "medium"}
-                    onValueChange={(v) => setGame2Risk(v as RiskLevel)}
-                  >
-                    <SelectTrigger id="game2Risk">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="very_low">Very Low (0.25x)</SelectItem>
-                      <SelectItem value="low">Low (0.5x)</SelectItem>
-                      <SelectItem value="medium">Medium (1.0x)</SelectItem>
-                      <SelectItem value="high">High (2.0x)</SelectItem>
-                      <SelectItem value="very_high">Very High (4.0x)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {/* DIGITS SPECIFIC */}
-              {game2Name === "digits" && (
-                <div className="space-y-2 pt-4 border-t">
-                  <Label htmlFor="game2DigitsType">
-                    Digits Type (e.g., &quot;20 & Over&quot;)
-                  </Label>
-                  <Input
-                    id="game2DigitsType"
-                    type="text"
-                    value={game2DigitsType}
-                    onChange={(e) => setGame2DigitsType(e.target.value)}
-                    placeholder="20 & Over"
-                  />
-                </div>
-              )}
-
-              {/* HOUSE EDGE OVERRIDE */}
-              <Collapsible open={game2HouseEdgeEnabled} onOpenChange={setGame2HouseEdgeEnabled}>
-                <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                  <ChevronDown className="h-4 w-4" />
-                  Custom House Edge
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-4 space-y-2">
-                  <Label htmlFor="game2HouseEdge">House Edge (%)</Label>
+                  <div className="relative">
+                    <Label htmlFor="game2HouseEdge">House Edge (%)</Label>
+                    <button
+                      type="button"
+                      onClick={() => setGame2HouseEdgeLocked(!game2HouseEdgeLocked)}
+                      className="absolute top-0 right-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {game2HouseEdgeLocked ? (
+                        <>
+                          <Lock className="h-3 w-3" />
+                          <span>Edit</span>
+                        </>
+                      ) : (
+                        <>
+                          <Unlock className="h-3 w-3" />
+                          <span>Edit</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                   <Input
                     id="game2HouseEdge"
                     type="number"
                     step="0.01"
-                    value={game2HouseEdge || ""}
-                    onChange={(e) =>
-                      setGame2HouseEdge(e.target.value ? Number(e.target.value) : null)
-                    }
-                    placeholder="e.g., 2.0"
+                    disabled={game2HouseEdgeLocked}
+                    value={game2HouseEdge !== null ? game2HouseEdge : (getDefaultHouseEdge(game2Name) ?? "")}
+                    onChange={(e) => setGame2HouseEdge(e.target.value ? Number(e.target.value) : null)}
+                    placeholder={getDefaultHouseEdge(game2Name) !== null ? "" : "Variable"}
+                    className={game2HouseEdgeLocked ? "bg-muted cursor-not-allowed" : ""}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Override the default house edge for this game
+                    {getDefaultHouseEdge(game2Name) !== null 
+                      ? `Default value (${getDefaultHouseEdge(game2Name)}%)`
+                      : "Variable based on threshold"}
                   </p>
-                </CollapsibleContent>
-              </Collapsible>
+                </div>
+              </div>
+
             </CardContent>
           ) : (
             <CardContent>
@@ -1077,13 +1542,35 @@ export default function EVSimulatorPage() {
         </Card>
       </div>
 
+      {/* SWITCH BALANCE CONFIGURATION */}
+      {game2Enabled && (
+        <Card className="mb-6 bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900">
+          <CardContent className="pt-6">
+            <div className="space-y-2 max-w-md">
+              <Label htmlFor="game2SwitchBalance">Switch Balance ($)</Label>
+              <Input
+                id="game2SwitchBalance"
+                type="number"
+                value={game2SwitchBalance}
+                onChange={(e) => setGame2SwitchBalance(Number(e.target.value))}
+                placeholder="400"
+                className="bg-white dark:bg-gray-950"
+              />
+              <p className="text-xs text-muted-foreground">
+                Balance threshold to switch from Game 1 to Game 2
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* COVERPLAY CONFIGURATIONS - SIDE BY SIDE */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* PRE-COVERPLAY CONFIGURATION */}
         <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Pre-Coverplay (Anti-Detection)</CardTitle>
+            <CardTitle>Pre-Coverplay</CardTitle>
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="preCoverplayEnabled"
@@ -1098,64 +1585,80 @@ export default function EVSimulatorPage() {
         </CardHeader>
         {preCoverplayEnabled ? (
           <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground mb-4">
-                Additional spins before main strategy to avoid casino detection
-              </p>
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="preCoverplayGame">Game</Label>
-                  <Select
-                    value={preCoverplayGame}
-                    onValueChange={(v) => setPreCoverplayGame(v as GameName)}
-                  >
-                    <SelectTrigger id="preCoverplayGame">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="bj">Blackjack</SelectItem>
-                      <SelectItem value="european_1s">European Roulette (Single)</SelectItem>
-                      <SelectItem value="european_12s">
-                        European Roulette (Column/Dozen)
-                      </SelectItem>
-                      <SelectItem value="european_18s">European Roulette (Red/Black)</SelectItem>
-                      <SelectItem value="american_18s">American Roulette (Red/Black)</SelectItem>
-                      <SelectItem value="french_18s">French Roulette (Red/Black)</SelectItem>
-                      <SelectItem value="baccarat_player">Baccarat (Player)</SelectItem>
-                      <SelectItem value="baccarat_banker">Baccarat (Banker)</SelectItem>
-                      <SelectItem value="baccarat_tie">Baccarat (Tie)</SelectItem>
-                      <SelectItem value="slots">Slots</SelectItem>
-                      <SelectItem value="digits">Digits</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="preCoverplayBetSize">Bet Size ($)</Label>
-                  <Input
-                    id="preCoverplayBetSize"
-                    type="number"
-                    step="0.01"
-                    value={preCoverplayBetSize}
-                    onChange={(e) => setPreCoverplayBetSize(Number(e.target.value))}
-                    placeholder="1.0"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="preCoverplayNumSpins">Number of Spins</Label>
-                  <Input
-                    id="preCoverplayNumSpins"
-                    type="number"
-                    value={preCoverplayNumSpins}
-                    onChange={(e) => setPreCoverplayNumSpins(Number(e.target.value))}
-                    placeholder="10"
-                  />
-                </div>
+            {/* Line 1: Game and Game Type */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="preCoverplayCategory">Game</Label>
+                <Select value={preCoverplayCategory} onValueChange={(v) => {
+                  const newCategory = v as GameCategory;
+                  setPreCoverplayCategory(newCategory);
+                  const defaultType = getDefaultGameType(newCategory);
+                  if (newCategory === "slots") {
+                    setPreCoverplayRisk(defaultType as RiskLevel);
+                  } else if (newCategory === "digits") {
+                    setPreCoverplayType(defaultType);
+                    setPreCoverplayDigitsType(defaultType);
+                  } else {
+                    setPreCoverplayType(defaultType);
+                  }
+                }}>
+                  <SelectTrigger id="preCoverplayCategory">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="roulette">Roulette</SelectItem>
+                    <SelectItem value="baccarat">Baccarat</SelectItem>
+                    <SelectItem value="blackjack">Blackjack</SelectItem>
+                    <SelectItem value="slots">Slots</SelectItem>
+                    <SelectItem value="digits">Digits</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              {preCoverplayGame === "slots" && (
-                <div className="space-y-2 pt-4 border-t">
-                  <Label htmlFor="preCoverplayRisk">Risk Level</Label>
+              <div className="space-y-2">
+                <Label htmlFor="preCoverplayType">
+                  {preCoverplayCategory === "slots" ? "Risk Level" : "Game Type"}
+                </Label>
+                {preCoverplayCategory === "roulette" && (
+                  <Select value={preCoverplayType} onValueChange={setPreCoverplayType}>
+                    <SelectTrigger id="preCoverplayType">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="European 1s">European 1s</SelectItem>
+                      <SelectItem value="European 2s">European 2s</SelectItem>
+                      <SelectItem value="European 3s">European 3s</SelectItem>
+                      <SelectItem value="European 4s">European 4s</SelectItem>
+                      <SelectItem value="European 6s">European 6s</SelectItem>
+                      <SelectItem value="European 12s">European 12s</SelectItem>
+                      <SelectItem value="European 18s">European 18s</SelectItem>
+                      <SelectItem value="American 18s">American 18s</SelectItem>
+                      <SelectItem value="French 18s">French 18s</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                {preCoverplayCategory === "baccarat" && (
+                  <Select value={preCoverplayType} onValueChange={setPreCoverplayType}>
+                    <SelectTrigger id="preCoverplayType">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Player">Player</SelectItem>
+                      <SelectItem value="Banker">Banker</SelectItem>
+                      <SelectItem value="Tie">Tie</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                {preCoverplayCategory === "blackjack" && (
+                  <Input
+                    id="preCoverplayType"
+                    value=""
+                    disabled
+                    placeholder="No types available"
+                    className="bg-muted"
+                  />
+                )}
+                {preCoverplayCategory === "slots" && (
                   <Select
                     value={preCoverplayRisk || "medium"}
                     onValueChange={(v) => setPreCoverplayRisk(v as RiskLevel)}
@@ -1171,32 +1674,91 @@ export default function EVSimulatorPage() {
                       <SelectItem value="very_high">Very High (4.0x)</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-              )}
+                )}
+                {preCoverplayCategory === "digits" && (
+                  <Select value={preCoverplayType} onValueChange={setPreCoverplayType}>
+                    <SelectTrigger id="preCoverplayType">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {digitsOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </div>
 
-              <Collapsible
-                open={preCoverplayHouseEdgeEnabled}
-                onOpenChange={setPreCoverplayHouseEdgeEnabled}
-              >
-                <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                  <ChevronDown className="h-4 w-4" />
-                  Custom House Edge
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-4 space-y-2">
-                  <Label htmlFor="preCoverplayHouseEdge">House Edge (%)</Label>
-                  <Input
-                    id="preCoverplayHouseEdge"
-                    type="number"
-                    step="0.01"
-                    value={preCoverplayHouseEdge || ""}
-                    onChange={(e) =>
-                      setPreCoverplayHouseEdge(e.target.value ? Number(e.target.value) : null)
-                    }
-                    placeholder="e.g., 2.0"
-                  />
-                </CollapsibleContent>
-              </Collapsible>
-            </CardContent>
+            {/* Line 2: Bet Size and Number of Spins */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="preCoverplayBetSize">Bet Size ($)</Label>
+                <Input
+                  id="preCoverplayBetSize"
+                  type="number"
+                  step="0.01"
+                  value={preCoverplayBetSize}
+                  onChange={(e) => setPreCoverplayBetSize(Number(e.target.value))}
+                  placeholder="1.0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="preCoverplayNumSpins">Number of Spins</Label>
+                <Input
+                  id="preCoverplayNumSpins"
+                  type="number"
+                  value={preCoverplayNumSpins}
+                  onChange={(e) => setPreCoverplayNumSpins(Number(e.target.value))}
+                  placeholder="10"
+                />
+              </div>
+            </div>
+
+            {/* Line 3: House Edge */}
+            <div className="space-y-2">
+              <div className="relative">
+                <Label htmlFor="preCoverplayHouseEdge">House Edge (%)</Label>
+                <button
+                  type="button"
+                  onClick={() => setPreCoverplayHouseEdgeLocked(!preCoverplayHouseEdgeLocked)}
+                  className="absolute top-0 right-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {preCoverplayHouseEdgeLocked ? (
+                    <>
+                      <Lock className="h-3 w-3" />
+                      <span>Edit</span>
+                    </>
+                  ) : (
+                    <>
+                      <Unlock className="h-3 w-3" />
+                      <span>Edit</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <Input
+                id="preCoverplayHouseEdge"
+                type="number"
+                step="0.01"
+                disabled={preCoverplayHouseEdgeLocked}
+                value={preCoverplayHouseEdge !== null ? preCoverplayHouseEdge : (getDefaultHouseEdge(preCoverplayGame) ?? "")}
+                onChange={(e) =>
+                  setPreCoverplayHouseEdge(e.target.value ? Number(e.target.value) : null)
+                }
+                placeholder={getDefaultHouseEdge(preCoverplayGame) !== null ? "" : "Variable"}
+                className={preCoverplayHouseEdgeLocked ? "bg-muted cursor-not-allowed" : ""}
+              />
+              <p className="text-xs text-muted-foreground">
+                {getDefaultHouseEdge(preCoverplayGame) !== null 
+                  ? `Default value (${getDefaultHouseEdge(preCoverplayGame)}%)`
+                  : "Variable based on threshold"}
+              </p>
+            </div>
+          </CardContent>
           ) : (
             <CardContent>
               <p className="text-sm text-muted-foreground">
@@ -1210,7 +1772,7 @@ export default function EVSimulatorPage() {
         <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Post-Coverplay (Anti-Detection)</CardTitle>
+            <CardTitle>Post-Coverplay</CardTitle>
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="postCoverplayEnabled"
@@ -1225,64 +1787,80 @@ export default function EVSimulatorPage() {
         </CardHeader>
         {postCoverplayEnabled ? (
           <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground mb-4">
-                Additional spins after main strategy to avoid casino detection
-              </p>
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="postCoverplayGame">Game</Label>
-                  <Select
-                    value={postCoverplayGame}
-                    onValueChange={(v) => setPostCoverplayGame(v as GameName)}
-                  >
-                    <SelectTrigger id="postCoverplayGame">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="bj">Blackjack</SelectItem>
-                      <SelectItem value="european_1s">European Roulette (Single)</SelectItem>
-                      <SelectItem value="european_12s">
-                        European Roulette (Column/Dozen)
-                      </SelectItem>
-                      <SelectItem value="european_18s">European Roulette (Red/Black)</SelectItem>
-                      <SelectItem value="american_18s">American Roulette (Red/Black)</SelectItem>
-                      <SelectItem value="french_18s">French Roulette (Red/Black)</SelectItem>
-                      <SelectItem value="baccarat_player">Baccarat (Player)</SelectItem>
-                      <SelectItem value="baccarat_banker">Baccarat (Banker)</SelectItem>
-                      <SelectItem value="baccarat_tie">Baccarat (Tie)</SelectItem>
-                      <SelectItem value="slots">Slots</SelectItem>
-                      <SelectItem value="digits">Digits</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="postCoverplayBetSize">Bet Size ($)</Label>
-                  <Input
-                    id="postCoverplayBetSize"
-                    type="number"
-                    step="0.01"
-                    value={postCoverplayBetSize}
-                    onChange={(e) => setPostCoverplayBetSize(Number(e.target.value))}
-                    placeholder="1.0"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="postCoverplayNumSpins">Number of Spins</Label>
-                  <Input
-                    id="postCoverplayNumSpins"
-                    type="number"
-                    value={postCoverplayNumSpins}
-                    onChange={(e) => setPostCoverplayNumSpins(Number(e.target.value))}
-                    placeholder="10"
-                  />
-                </div>
+            {/* Line 1: Game and Game Type */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="postCoverplayCategory">Game</Label>
+                <Select value={postCoverplayCategory} onValueChange={(v) => {
+                  const newCategory = v as GameCategory;
+                  setPostCoverplayCategory(newCategory);
+                  const defaultType = getDefaultGameType(newCategory);
+                  if (newCategory === "slots") {
+                    setPostCoverplayRisk(defaultType as RiskLevel);
+                  } else if (newCategory === "digits") {
+                    setPostCoverplayType(defaultType);
+                    setPostCoverplayDigitsType(defaultType);
+                  } else {
+                    setPostCoverplayType(defaultType);
+                  }
+                }}>
+                  <SelectTrigger id="postCoverplayCategory">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="roulette">Roulette</SelectItem>
+                    <SelectItem value="baccarat">Baccarat</SelectItem>
+                    <SelectItem value="blackjack">Blackjack</SelectItem>
+                    <SelectItem value="slots">Slots</SelectItem>
+                    <SelectItem value="digits">Digits</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              {postCoverplayGame === "slots" && (
-                <div className="space-y-2 pt-4 border-t">
-                  <Label htmlFor="postCoverplayRisk">Risk Level</Label>
+              <div className="space-y-2">
+                <Label htmlFor="postCoverplayType">
+                  {postCoverplayCategory === "slots" ? "Risk Level" : "Game Type"}
+                </Label>
+                {postCoverplayCategory === "roulette" && (
+                  <Select value={postCoverplayType} onValueChange={setPostCoverplayType}>
+                    <SelectTrigger id="postCoverplayType">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="European 1s">European 1s</SelectItem>
+                      <SelectItem value="European 2s">European 2s</SelectItem>
+                      <SelectItem value="European 3s">European 3s</SelectItem>
+                      <SelectItem value="European 4s">European 4s</SelectItem>
+                      <SelectItem value="European 6s">European 6s</SelectItem>
+                      <SelectItem value="European 12s">European 12s</SelectItem>
+                      <SelectItem value="European 18s">European 18s</SelectItem>
+                      <SelectItem value="American 18s">American 18s</SelectItem>
+                      <SelectItem value="French 18s">French 18s</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                {postCoverplayCategory === "baccarat" && (
+                  <Select value={postCoverplayType} onValueChange={setPostCoverplayType}>
+                    <SelectTrigger id="postCoverplayType">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Player">Player</SelectItem>
+                      <SelectItem value="Banker">Banker</SelectItem>
+                      <SelectItem value="Tie">Tie</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                {postCoverplayCategory === "blackjack" && (
+                  <Input
+                    id="postCoverplayType"
+                    value=""
+                    disabled
+                    placeholder="No types available"
+                    className="bg-muted"
+                  />
+                )}
+                {postCoverplayCategory === "slots" && (
                   <Select
                     value={postCoverplayRisk || "medium"}
                     onValueChange={(v) => setPostCoverplayRisk(v as RiskLevel)}
@@ -1298,32 +1876,91 @@ export default function EVSimulatorPage() {
                       <SelectItem value="very_high">Very High (4.0x)</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-              )}
+                )}
+                {postCoverplayCategory === "digits" && (
+                  <Select value={postCoverplayType} onValueChange={setPostCoverplayType}>
+                    <SelectTrigger id="postCoverplayType">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {digitsOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </div>
 
-              <Collapsible
-                open={postCoverplayHouseEdgeEnabled}
-                onOpenChange={setPostCoverplayHouseEdgeEnabled}
-              >
-                <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                  <ChevronDown className="h-4 w-4" />
-                  Custom House Edge
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-4 space-y-2">
-                  <Label htmlFor="postCoverplayHouseEdge">House Edge (%)</Label>
-                  <Input
-                    id="postCoverplayHouseEdge"
-                    type="number"
-                    step="0.01"
-                    value={postCoverplayHouseEdge || ""}
-                    onChange={(e) =>
-                      setPostCoverplayHouseEdge(e.target.value ? Number(e.target.value) : null)
-                    }
-                    placeholder="e.g., 2.0"
-                  />
-                </CollapsibleContent>
-              </Collapsible>
-            </CardContent>
+            {/* Line 2: Bet Size and Number of Spins */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="postCoverplayBetSize">Bet Size ($)</Label>
+                <Input
+                  id="postCoverplayBetSize"
+                  type="number"
+                  step="0.01"
+                  value={postCoverplayBetSize}
+                  onChange={(e) => setPostCoverplayBetSize(Number(e.target.value))}
+                  placeholder="1.0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="postCoverplayNumSpins">Number of Spins</Label>
+                <Input
+                  id="postCoverplayNumSpins"
+                  type="number"
+                  value={postCoverplayNumSpins}
+                  onChange={(e) => setPostCoverplayNumSpins(Number(e.target.value))}
+                  placeholder="10"
+                />
+              </div>
+            </div>
+
+            {/* Line 3: House Edge */}
+            <div className="space-y-2">
+              <div className="relative">
+                <Label htmlFor="postCoverplayHouseEdge">House Edge (%)</Label>
+                <button
+                  type="button"
+                  onClick={() => setPostCoverplayHouseEdgeLocked(!postCoverplayHouseEdgeLocked)}
+                  className="absolute top-0 right-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {postCoverplayHouseEdgeLocked ? (
+                    <>
+                      <Lock className="h-3 w-3" />
+                      <span>Edit</span>
+                    </>
+                  ) : (
+                    <>
+                      <Unlock className="h-3 w-3" />
+                      <span>Edit</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <Input
+                id="postCoverplayHouseEdge"
+                type="number"
+                step="0.01"
+                disabled={postCoverplayHouseEdgeLocked}
+                value={postCoverplayHouseEdge !== null ? postCoverplayHouseEdge : (getDefaultHouseEdge(postCoverplayGame) ?? "")}
+                onChange={(e) =>
+                  setPostCoverplayHouseEdge(e.target.value ? Number(e.target.value) : null)
+                }
+                placeholder={getDefaultHouseEdge(postCoverplayGame) !== null ? "" : "Variable"}
+                className={postCoverplayHouseEdgeLocked ? "bg-muted cursor-not-allowed" : ""}
+              />
+              <p className="text-xs text-muted-foreground">
+                {getDefaultHouseEdge(postCoverplayGame) !== null 
+                  ? `Default value (${getDefaultHouseEdge(postCoverplayGame)}%)`
+                  : "Variable based on threshold"}
+              </p>
+            </div>
+          </CardContent>
           ) : (
             <CardContent>
               <p className="text-sm text-muted-foreground">
@@ -1336,36 +1973,19 @@ export default function EVSimulatorPage() {
 
       {/* SIMULATION PARAMETERS */}
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Simulation Parameters</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="numSessions">Number of Sessions</Label>
-              <Input
-                id="numSessions"
-                type="number"
-                value={numSessions}
-                onChange={(e) => setNumSessions(Number(e.target.value))}
-                placeholder="1000000"
-              />
-              <p className="text-xs text-muted-foreground">
-                Higher values = more accurate results but slower
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="randomSeed">Random Seed (optional)</Label>
-              <Input
-                id="randomSeed"
-                type="number"
-                value={randomSeed || ""}
-                onChange={(e) => setRandomSeed(e.target.value ? Number(e.target.value) : null)}
-                placeholder="Leave empty for random"
-              />
-              <p className="text-xs text-muted-foreground">For reproducible results</p>
-            </div>
+        <CardContent className="space-y-4 pt-6">
+          <div className="space-y-2">
+            <Label htmlFor="numSessions">Number of Sessions</Label>
+            <Input
+              id="numSessions"
+              type="number"
+              value={numSessions}
+              onChange={(e) => setNumSessions(Number(e.target.value))}
+              placeholder="1000000"
+            />
+            <p className="text-xs text-muted-foreground">
+              Higher values = more accurate results but slower
+            </p>
           </div>
         </CardContent>
       </Card>
