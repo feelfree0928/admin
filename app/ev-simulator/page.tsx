@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, ChevronDown, AlertCircle, TrendingUp, TrendingDown, CheckCircle2, XCircle, Lock, Unlock } from "lucide-react";
+import { Loader2, ChevronDown, AlertCircle, TrendingUp, TrendingDown, CheckCircle2, XCircle, Lock, Unlock, Settings } from "lucide-react";
+import { SettingsModal } from "@/components/SettingsModal";
 
 // ============================================================================
 // TYPE DEFINITIONS (matching backend API from src/Types.jl and src/RequestParser.jl)
@@ -200,6 +201,10 @@ export default function EVSimulatorPage() {
   const [results, setResults] = useState<ApiResponse | null>(null);
   const [backendStatus, setBackendStatus] = useState<"checking" | "online" | "offline">("checking");
 
+  // Global configuration state
+  const [globalConfig, setGlobalConfig] = useState<any>(null);
+  const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
+
   // ============================================================================
   // HELPER FUNCTIONS
   // ============================================================================
@@ -230,6 +235,47 @@ export default function EVSimulatorPage() {
     const interval = setInterval(checkBackend, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // Load global configuration
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const response = await fetch('/api/config');
+        const data = await response.json();
+        if (data.success && data.config) {
+          setGlobalConfig(data.config);
+        }
+      } catch (err) {
+        console.error('Failed to load global configuration:', err);
+      }
+    };
+    loadConfig();
+  }, []);
+
+  const getDefaultTimePerBet = (gameName: GameName): number => {
+    // Use global config values if available, otherwise use hardcoded default
+    if (globalConfig?.defaults?.timePerBet) {
+      const configValue = globalConfig.defaults.timePerBet[gameName];
+      if (configValue !== undefined) {
+        return configValue;
+      }
+    }
+    // Fallback to hardcoded default
+    return 3.0;
+  };
+
+  // Apply default time per bet from config when it loads or when games change
+  useEffect(() => {
+    if (globalConfig?.defaults?.timePerBet) {
+      setGame1TimePerBet(getDefaultTimePerBet(game1Name));
+    }
+  }, [globalConfig, game1Name]);
+
+  useEffect(() => {
+    if (globalConfig?.defaults?.timePerBet) {
+      setGame2TimePerBet(getDefaultTimePerBet(game2Name));
+    }
+  }, [globalConfig, game2Name]);
 
   const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat("en-US", {
@@ -359,6 +405,15 @@ export default function EVSimulatorPage() {
 
   // Get default house edge for a game name
   const getDefaultHouseEdge = (gameName: GameName): number | null => {
+    // Use global config values if available, otherwise use hardcoded defaults
+    if (globalConfig?.defaults?.houseEdges) {
+      const configValue = globalConfig.defaults.houseEdges[gameName];
+      if (configValue !== undefined && gameName !== "digits") {
+        return configValue;
+      }
+    }
+
+    // Fallback to hardcoded defaults
     switch (gameName) {
       case "bj":
         return 0.46;
@@ -869,6 +924,15 @@ export default function EVSimulatorPage() {
                 Backend Offline
               </Badge>
             )}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowSettingsModal(true)}
+              title="Global Settings"
+              className="ml-2"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
           </div>
         </div>
         {backendStatus === "offline" && (
@@ -1567,6 +1631,7 @@ export default function EVSimulatorPage() {
       {/* COVERPLAY CONFIGURATIONS - SIDE BY SIDE */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* PRE-COVERPLAY CONFIGURATION */}
+        {globalConfig?.features?.preCoverplayEnabled && (
         <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -1767,8 +1832,10 @@ export default function EVSimulatorPage() {
             </CardContent>
           )}
         </Card>
+        )}
 
         {/* POST-COVERPLAY CONFIGURATION */}
+        {globalConfig?.features?.postCoverplayEnabled && (
         <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -1969,11 +2036,15 @@ export default function EVSimulatorPage() {
             </CardContent>
           )}
         </Card>
+        )}
       </div>
 
       {/* SIMULATION PARAMETERS */}
       <Card className="mb-6">
-        <CardContent className="space-y-4 pt-6">
+        <CardHeader>
+          <CardTitle>Simulation Parameters</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="numSessions">Number of Sessions</Label>
             <Input
@@ -2158,6 +2229,28 @@ export default function EVSimulatorPage() {
           )}
         </div>
       )}
+
+      {/* Settings Modal */}
+      <SettingsModal
+        open={showSettingsModal}
+        onOpenChange={setShowSettingsModal}
+        currentConfig={globalConfig}
+        onConfigUpdate={() => {
+          // Reload config after update
+          const loadConfig = async () => {
+            try {
+              const response = await fetch('/api/config');
+              const data = await response.json();
+              if (data.success && data.config) {
+                setGlobalConfig(data.config);
+              }
+            } catch (err) {
+              console.error('Failed to reload configuration:', err);
+            }
+          };
+          loadConfig();
+        }}
+      />
     </div>
   );
 }
