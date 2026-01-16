@@ -770,7 +770,9 @@ export default function EVSimulatorPage() {
   }, []); // Only run on mount
 
   const validateForm = (): string | null => {
-    if (deposit <= 0) return "Deposit must be greater than 0";
+    if ((bonusType === "postwager" || bonusType === "cashback") && deposit <= 0) {
+      return "Deposit must be greater than 0";
+    }
     if (bonusType !== "raw" && bonusAmount < 0) return "Bonus amount cannot be negative";
     if (game1BetSize <= 0) return "Game 1 bet size must be greater than 0";
     if (game2Enabled && game2BetSize <= 0) {
