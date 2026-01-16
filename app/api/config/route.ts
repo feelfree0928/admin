@@ -8,39 +8,25 @@ export interface GlobalConfig {
   adminPassword: string;
   defaults: {
     timePerBet: {
-      bj: number;
-      european_1s: number;
-      european_2s: number;
-      european_3s: number;
-      european_4s: number;
-      european_6s: number;
-      european_12s: number;
-      european_18s: number;
-      american_18s: number;
-      french_18s: number;
-      baccarat_player: number;
-      baccarat_banker: number;
-      baccarat_tie: number;
+      roulette: number;  // Single entry for all roulette types
+      blackjack: number;
+      baccarat: number;  // Single entry for all baccarat types
       slots: number;
       digits: number;
     };
     houseEdges: {
-      bj: number;
-      european_1s: number;
-      european_2s: number;
-      european_3s: number;
-      european_4s: number;
-      european_6s: number;
-      european_12s: number;
-      european_18s: number;
-      american_18s: number;
-      french_18s: number;
+      european_roulette: number;
+      american_roulette: number;
+      french_roulette_standard: number;
+      french_roulette_18s: number;
+      blackjack: number;
       baccarat_player: number;
       baccarat_banker: number;
       baccarat_tie: number;
       slots: number;
       digits: number | null;
     };
+    numSessions: number;
   };
   features: {
     preCoverplayEnabled: boolean;
@@ -116,6 +102,17 @@ export async function POST(request: NextRequest) {
         { 
           success: false, 
           error: 'Invalid configuration structure' 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate numSessions
+    if (typeof newConfig.defaults.numSessions !== 'number' || newConfig.defaults.numSessions <= 0 || !Number.isInteger(newConfig.defaults.numSessions)) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'numSessions must be a positive integer' 
         },
         { status: 400 }
       );

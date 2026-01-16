@@ -20,8 +20,8 @@ import { SettingsModal } from "@/components/SettingsModal";
 type BonusType = "cashable" | "postwager" | "cashback" | "sticky" | "freespins" | "raw";
 type CashbackType = "on_win" | "on_loss" | "both" | "fixed_wager";
 type SimulationMode = "standard" | "two_tier";
-type GameName = "bj" | "european_1s" | "european_12s" | "european_18s" | "american_18s" | "french_18s" | "european_2s" | "european_3s" | "european_4s" | "european_6s" | "baccarat_player" | "baccarat_banker" | "baccarat_tie" | "slots" | "digits";
-type GameCategory = "roulette" | "baccarat" | "blackjack" | "slots" | "digits";
+type GameName = "bj" | "european_1s" | "european_12s" | "european_18s" | "american_18s" | "american_1s" | "american_2s" | "american_3s" | "american_4s" | "american_6s" | "american_12s" | "french_18s" | "french_1s" | "french_2s" | "french_3s" | "french_4s" | "french_6s" | "french_12s" | "european_2s" | "european_3s" | "european_4s" | "european_6s" | "baccarat_player" | "baccarat_banker" | "baccarat_tie" | "slots" | "digits";
+type GameCategory = "european_roulette" | "american_roulette" | "french_roulette" | "baccarat" | "blackjack" | "slots" | "digits";
 type RiskLevel = "very_low" | "low" | "medium" | "high" | "very_high";
 
 interface BonusConfig {
@@ -142,9 +142,9 @@ export default function EVSimulatorPage() {
   const [maxCashout, setMaxCashout] = useState<number | null>(null);
 
   // Game 1 state
-  const [game1Name, setGame1Name] = useState<GameName>("bj");
-  const [game1Category, setGame1Category] = useState<GameCategory>("blackjack");
-  const [game1Type, setGame1Type] = useState<string>("");
+  const [game1Name, setGame1Name] = useState<GameName>("european_1s");
+  const [game1Category, setGame1Category] = useState<GameCategory>("european_roulette");
+  const [game1Type, setGame1Type] = useState<string>("1s");
   const [game1BetSize, setGame1BetSize] = useState<number>(5.0);
   const [game1TimePerBet, setGame1TimePerBet] = useState<number>(3.0);
   const [game1Weighting, setGame1Weighting] = useState<number>(100.0);
@@ -162,6 +162,8 @@ export default function EVSimulatorPage() {
   const [game2TimePerBet, setGame2TimePerBet] = useState<number>(3.0);
   const [game2Weighting, setGame2Weighting] = useState<number>(100.0);
   const [game2SwitchBalance, setGame2SwitchBalance] = useState<number>(400);
+  const [switchBalanceCalculationType, setSwitchBalanceCalculationType] = useState<"deposit" | "bonus" | "both" | "fixed">("deposit");
+  const [switchBalanceMultiplier, setSwitchBalanceMultiplier] = useState<number>(4);
   const [game2HouseEdge, setGame2HouseEdge] = useState<number | null>(null);
   const [game2HouseEdgeLocked, setGame2HouseEdgeLocked] = useState<boolean>(true);
   const [game2DigitsType, setGame2DigitsType] = useState<string>("0 & Under");
@@ -191,8 +193,7 @@ export default function EVSimulatorPage() {
   const [postCoverplayHouseEdgeLocked, setPostCoverplayHouseEdgeLocked] = useState<boolean>(true);
   const [postCoverplayDigitsType, setPostCoverplayDigitsType] = useState<string>("0 & Under");
 
-  // Simulation parameters
-  const [numSessions, setNumSessions] = useState<number>(1000000);
+  // Simulation parameters (removed - now using globalConfig.defaults.numSessions)
   const [randomSeed, setRandomSeed] = useState<number | null>(null);
 
   // UI state
@@ -255,7 +256,8 @@ export default function EVSimulatorPage() {
   const getDefaultTimePerBet = (gameName: GameName): number => {
     // Use global config values if available, otherwise use hardcoded default
     if (globalConfig?.defaults?.timePerBet) {
-      const configValue = globalConfig.defaults.timePerBet[gameName];
+      const category = getTimePerBetCategory(gameName);
+      const configValue = globalConfig.defaults.timePerBet[category];
       if (configValue !== undefined) {
         return configValue;
       }
@@ -297,7 +299,19 @@ export default function EVSimulatorPage() {
       european_12s: "Roulette European 12s",
       european_18s: "Roulette European 18s",
       american_18s: "Roulette American 18s",
+      american_1s: "Roulette American 1s",
+      american_2s: "Roulette American 2s",
+      american_3s: "Roulette American 3s",
+      american_4s: "Roulette American 4s",
+      american_6s: "Roulette American 6s",
+      american_12s: "Roulette American 12s",
       french_18s: "Roulette French 18s",
+      french_1s: "Roulette French 1s",
+      french_2s: "Roulette French 2s",
+      french_3s: "Roulette French 3s",
+      french_4s: "Roulette French 4s",
+      french_6s: "Roulette French 6s",
+      french_12s: "Roulette French 12s",
       european_2s: "Roulette European 2s",
       european_3s: "Roulette European 3s",
       european_4s: "Roulette European 4s",
@@ -311,30 +325,77 @@ export default function EVSimulatorPage() {
     return gameNames[gameName] || gameName;
   };
 
-  // Helper functions for game category/type mapping
-  const getGameCategoryFromName = (gameName: GameName): GameCategory => {
+  // Category mapping types for global configuration
+  type TimePerBetCategory = 
+    | "roulette"  // All roulette types share the same time per bet
+    | "blackjack"
+    | "baccarat"  // All baccarat types share the same time per bet
+    | "slots"
+    | "digits";
+
+  type HouseEdgeCategory = 
+    | "european_roulette" 
+    | "american_roulette" 
+    | "french_roulette_standard" 
+    | "french_roulette_18s"
+    | "blackjack"
+    | "baccarat_player"
+    | "baccarat_banker"
+    | "baccarat_tie"
+    | "slots"
+    | "digits";
+
+  const getTimePerBetCategory = (gameName: GameName): TimePerBetCategory => {
+    // All roulette types use the same time per bet
+    if (gameName.startsWith("european_") || gameName.startsWith("american_") || gameName.startsWith("french_")) {
+      return "roulette";
+    }
     if (gameName === "bj") return "blackjack";
-    if (gameName.startsWith("european_") || gameName.startsWith("american_") || gameName.startsWith("french_")) return "roulette";
+    // All baccarat types use the same time per bet
     if (gameName.startsWith("baccarat_")) return "baccarat";
     if (gameName === "slots") return "slots";
     if (gameName === "digits") return "digits";
     return "blackjack"; // default
   };
 
+  const getHouseEdgeCategory = (gameName: GameName): HouseEdgeCategory => {
+    if (gameName.startsWith("european_")) return "european_roulette";
+    if (gameName.startsWith("american_")) return "american_roulette";
+    if (gameName === "french_18s") return "french_roulette_18s";
+    if (gameName.startsWith("french_")) return "french_roulette_standard";
+    if (gameName === "bj") return "blackjack";
+    if (gameName === "baccarat_player") return "baccarat_player";
+    if (gameName === "baccarat_banker") return "baccarat_banker";
+    if (gameName === "baccarat_tie") return "baccarat_tie";
+    if (gameName === "slots") return "slots";
+    if (gameName === "digits") return "digits";
+    return "blackjack"; // default
+  };
+
+  // Helper functions for game category/type mapping
+  const getGameCategoryFromName = (gameName: GameName): GameCategory => {
+    if (gameName === "bj") return "blackjack";
+    if (gameName.startsWith("european_")) return "european_roulette";
+    if (gameName.startsWith("american_")) return "american_roulette";
+    if (gameName.startsWith("french_")) return "french_roulette";
+    if (gameName.startsWith("baccarat_")) return "baccarat";
+    if (gameName === "slots") return "slots";
+    if (gameName === "digits") return "digits";
+    return "blackjack"; // default
+  };
+
+  const getRouletteBetTypeFromName = (gameName: GameName): string => {
+    if (gameName.startsWith("european_") || gameName.startsWith("american_") || gameName.startsWith("french_")) {
+      const parts = gameName.split("_");
+      return parts[1] || "1s"; // Return "1s", "2s", "18s", etc.
+    }
+    return "1s";
+  };
+
   const getGameTypeFromName = (gameName: GameName, category: GameCategory, digitsType?: string): string => {
-    if (category === "roulette") {
-      const typeMap: Record<string, string> = {
-        european_1s: "European 1s",
-        european_2s: "European 2s",
-        european_3s: "European 3s",
-        european_4s: "European 4s",
-        european_6s: "European 6s",
-        european_12s: "European 12s",
-        european_18s: "European 18s",
-        american_18s: "American 18s",
-        french_18s: "French 18s",
-      };
-      return typeMap[gameName] || "";
+    if (category === "european_roulette" || category === "american_roulette" || category === "french_roulette") {
+      // Return just the bet type (1s, 2s, 3s, etc.) for roulette
+      return getRouletteBetTypeFromName(gameName);
     }
     if (category === "baccarat") {
       const typeMap: Record<string, string> = {
@@ -355,19 +416,11 @@ export default function EVSimulatorPage() {
     if (category === "slots") return "slots";
     if (category === "digits") return "digits";
     
-    if (category === "roulette") {
-      const typeMap: Record<string, GameName> = {
-        "European 1s": "european_1s",
-        "European 2s": "european_2s",
-        "European 3s": "european_3s",
-        "European 4s": "european_4s",
-        "European 6s": "european_6s",
-        "European 12s": "european_12s",
-        "European 18s": "european_18s",
-        "American 18s": "american_18s",
-        "French 18s": "french_18s",
-      };
-      return typeMap[type] || "european_18s";
+    if (category === "european_roulette" || category === "american_roulette" || category === "french_roulette") {
+      // Construct game name from category + bet type
+      const variant = category.replace("_roulette", "");
+      const betType = type || "1s";
+      return `${variant}_${betType}` as GameName;
     }
     
     if (category === "baccarat") {
@@ -388,8 +441,10 @@ export default function EVSimulatorPage() {
   // Get default game type for a category
   const getDefaultGameType = (category: GameCategory): string => {
     switch (category) {
-      case "roulette":
-        return "European 1s";
+      case "european_roulette":
+      case "american_roulette":
+      case "french_roulette":
+        return "1s";
       case "baccarat":
         return "Player";
       case "blackjack":
@@ -407,7 +462,8 @@ export default function EVSimulatorPage() {
   const getDefaultHouseEdge = (gameName: GameName): number | null => {
     // Use global config values if available, otherwise use hardcoded defaults
     if (globalConfig?.defaults?.houseEdges) {
-      const configValue = globalConfig.defaults.houseEdges[gameName];
+      const category = getHouseEdgeCategory(gameName);
+      const configValue = globalConfig.defaults.houseEdges[category];
       if (configValue !== undefined && gameName !== "digits") {
         return configValue;
       }
@@ -418,11 +474,11 @@ export default function EVSimulatorPage() {
       case "bj":
         return 0.46;
       case "european_1s":
-        return 2.7;
+        return 2.703;
       case "european_12s":
-        return 2.7;
+        return 2.703;
       case "european_18s":
-        return 2.7;
+        return 2.703;
       case "european_2s":
         return 2.703;
       case "european_3s":
@@ -432,9 +488,33 @@ export default function EVSimulatorPage() {
       case "european_6s":
         return 2.703;
       case "american_18s":
-        return 5.26;
+        return 5.263;
+      case "american_1s":
+        return 5.263;
+      case "american_2s":
+        return 5.263;
+      case "american_3s":
+        return 5.263;
+      case "american_4s":
+        return 5.263;
+      case "american_6s":
+        return 5.263;
+      case "american_12s":
+        return 5.263;
       case "french_18s":
-        return 1.35;
+        return 1.351;
+      case "french_1s":
+        return 2.703;
+      case "french_2s":
+        return 2.703;
+      case "french_3s":
+        return 2.703;
+      case "french_4s":
+        return 2.703;
+      case "french_6s":
+        return 2.703;
+      case "french_12s":
+        return 2.703;
       case "baccarat_player":
         return 1.060;
       case "baccarat_banker":
@@ -545,12 +625,53 @@ export default function EVSimulatorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
-  // Disable Two-Tier Strategy when bonus type is not "Deposit Bonuses" (cashable)
+  // Disable Two-Tier Strategy when bonus type doesn't support it (only cashable, postwager, and cashback support it)
   useEffect(() => {
-    if (bonusType !== "cashable" && game2Enabled) {
+    // Disable two-tier strategy only for bonus types that don't support it
+    if (bonusType !== "cashable" && bonusType !== "postwager" && bonusType !== "cashback" && game2Enabled) {
       setGame2Enabled(false);
     }
   }, [bonusType, game2Enabled]);
+
+  // Calculate switch balance based on selected type and multiplier
+  const calculateSwitchBalance = (): number => {
+    switch (switchBalanceCalculationType) {
+      case "deposit":
+        return deposit * switchBalanceMultiplier;
+      case "bonus":
+        return bonusAmount * switchBalanceMultiplier;
+      case "both":
+        return (deposit + bonusAmount) * switchBalanceMultiplier;
+      case "fixed":
+        return switchBalanceMultiplier;
+      default:
+        return deposit * switchBalanceMultiplier;
+    }
+  };
+
+  // Auto-update switch balance when calculation inputs change
+  useEffect(() => {
+    if (game2Enabled) {
+      let calculated: number;
+      switch (switchBalanceCalculationType) {
+        case "deposit":
+          calculated = deposit * switchBalanceMultiplier;
+          break;
+        case "bonus":
+          calculated = bonusAmount * switchBalanceMultiplier;
+          break;
+        case "both":
+          calculated = (deposit + bonusAmount) * switchBalanceMultiplier;
+          break;
+        case "fixed":
+          calculated = switchBalanceMultiplier;
+          break;
+        default:
+          calculated = deposit * switchBalanceMultiplier;
+      }
+      setGame2SwitchBalance(calculated);
+    }
+  }, [switchBalanceCalculationType, switchBalanceMultiplier, deposit, bonusAmount, game2Enabled]);
 
   // Set default type if empty when category is set
   useEffect(() => {
@@ -834,7 +955,7 @@ export default function EVSimulatorPage() {
         bonus: bonusConfig,
         game1: game1Config,
         simulation: {
-          num_sessions: numSessions,
+          num_sessions: globalConfig?.defaults?.numSessions ?? 1000000,
           random_seed: randomSeed,
         },
       };
@@ -1192,7 +1313,7 @@ export default function EVSimulatorPage() {
             {/* Line 1: Game and Game Type */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="game1Category">Game</Label>
+                <Label htmlFor="game1Category">Game Type</Label>
                 <Select value={game1Category} onValueChange={(v) => {
                   const newCategory = v as GameCategory;
                   setGame1Category(newCategory);
@@ -1210,7 +1331,9 @@ export default function EVSimulatorPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="roulette">Roulette</SelectItem>
+                    <SelectItem value="european_roulette">European Roulette</SelectItem>
+                    <SelectItem value="american_roulette">American Roulette</SelectItem>
+                    <SelectItem value="french_roulette">French Roulette</SelectItem>
                     <SelectItem value="baccarat">Baccarat</SelectItem>
                     <SelectItem value="blackjack">Blackjack</SelectItem>
                     <SelectItem value="slots">Slots</SelectItem>
@@ -1221,23 +1344,21 @@ export default function EVSimulatorPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="game1Type">
-                  {game1Category === "slots" ? "Risk Level" : "Game Type"}
+                  {game1Category === "slots" ? "Risk Level" : "Selection"}
                 </Label>
-                {game1Category === "roulette" && (
+                {(game1Category === "european_roulette" || game1Category === "american_roulette" || game1Category === "french_roulette") && (
                   <Select value={game1Type} onValueChange={setGame1Type}>
                     <SelectTrigger id="game1Type">
-                      <SelectValue placeholder="Select type" />
+                      <SelectValue placeholder="Select bet type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="European 1s">European 1s</SelectItem>
-                      <SelectItem value="European 2s">European 2s</SelectItem>
-                      <SelectItem value="European 3s">European 3s</SelectItem>
-                      <SelectItem value="European 4s">European 4s</SelectItem>
-                      <SelectItem value="European 6s">European 6s</SelectItem>
-                      <SelectItem value="European 12s">European 12s</SelectItem>
-                      <SelectItem value="European 18s">European 18s</SelectItem>
-                      <SelectItem value="American 18s">American 18s</SelectItem>
-                      <SelectItem value="French 18s">French 18s</SelectItem>
+                      <SelectItem value="1s">1s</SelectItem>
+                      <SelectItem value="2s">2s</SelectItem>
+                      <SelectItem value="3s">3s</SelectItem>
+                      <SelectItem value="4s">4s</SelectItem>
+                      <SelectItem value="6s">6s</SelectItem>
+                      <SelectItem value="12s">12s</SelectItem>
+                      <SelectItem value="18s">18s</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -1389,17 +1510,17 @@ export default function EVSimulatorPage() {
               <Checkbox
                 id="game2Enabled"
                 checked={game2Enabled}
-                disabled={bonusType !== "cashable"}
+                disabled={bonusType !== "cashable" && bonusType !== "postwager" && bonusType !== "cashback"}
                 onCheckedChange={(checked) => setGame2Enabled(checked as boolean)}
               />
               <Label 
                 htmlFor="game2Enabled" 
-                className={`font-normal ${bonusType !== "cashable" ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer"}`}
+                className={`font-normal ${bonusType !== "cashable" && bonusType !== "postwager" && bonusType !== "cashback" ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer"}`}
               >
                 Enable Two-Tier Strategy
-                {bonusType !== "cashable" && (
+                {bonusType !== "cashable" && bonusType !== "postwager" && bonusType !== "cashback" && (
                   <span className="text-xs block text-muted-foreground mt-1">
-                    (Only available with Deposit Bonuses)
+                    (Only available with Deposit Bonuses, Post-Wager, or Cashback)
                   </span>
                 )}
               </Label>
@@ -1411,7 +1532,7 @@ export default function EVSimulatorPage() {
               {/* Line 1: Game and Game Type */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="game2Category">Game</Label>
+                  <Label htmlFor="game2Category">Game Type</Label>
                   <Select value={game2Category} onValueChange={(v) => {
                     const newCategory = v as GameCategory;
                     setGame2Category(newCategory);
@@ -1429,7 +1550,9 @@ export default function EVSimulatorPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="roulette">Roulette</SelectItem>
+                      <SelectItem value="european_roulette">European Roulette</SelectItem>
+                      <SelectItem value="american_roulette">American Roulette</SelectItem>
+                      <SelectItem value="french_roulette">French Roulette</SelectItem>
                       <SelectItem value="baccarat">Baccarat</SelectItem>
                       <SelectItem value="blackjack">Blackjack</SelectItem>
                       <SelectItem value="slots">Slots</SelectItem>
@@ -1440,23 +1563,21 @@ export default function EVSimulatorPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="game2Type">
-                    {game2Category === "slots" ? "Risk Level" : "Game Type"}
+                    {game2Category === "slots" ? "Risk Level" : "Selection"}
                   </Label>
-                  {game2Category === "roulette" && (
+                  {(game2Category === "european_roulette" || game2Category === "american_roulette" || game2Category === "french_roulette") && (
                     <Select value={game2Type} onValueChange={setGame2Type}>
                       <SelectTrigger id="game2Type">
-                        <SelectValue placeholder="Select type" />
+                        <SelectValue placeholder="Select bet type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="European 1s">European 1s</SelectItem>
-                        <SelectItem value="European 2s">European 2s</SelectItem>
-                        <SelectItem value="European 3s">European 3s</SelectItem>
-                        <SelectItem value="European 4s">European 4s</SelectItem>
-                        <SelectItem value="European 6s">European 6s</SelectItem>
-                        <SelectItem value="European 12s">European 12s</SelectItem>
-                        <SelectItem value="European 18s">European 18s</SelectItem>
-                        <SelectItem value="American 18s">American 18s</SelectItem>
-                        <SelectItem value="French 18s">French 18s</SelectItem>
+                        <SelectItem value="1s">1s</SelectItem>
+                        <SelectItem value="2s">2s</SelectItem>
+                        <SelectItem value="3s">3s</SelectItem>
+                        <SelectItem value="4s">4s</SelectItem>
+                        <SelectItem value="6s">6s</SelectItem>
+                        <SelectItem value="12s">12s</SelectItem>
+                        <SelectItem value="18s">18s</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
@@ -1595,6 +1716,53 @@ export default function EVSimulatorPage() {
                 </div>
               </div>
 
+              {/* Switch Balance - Only shown when Game 2 is enabled */}
+              <div className="space-y-2 pt-4 border-t">
+                <div className="flex items-start gap-2 flex-wrap grid grid-cols-2">
+                  <div className="flex items-center gap-2 py-2">
+                    <span className="text-xl font-semibold text-green-600 dark:text-green-400 whitespace-nowrap">Switch Balance ($) :</span>
+                      <span className="text-xl font-semibold text-green-600 dark:text-green-400">{calculateSwitchBalance().toLocaleString()}  </span>
+                  </div>
+                  <div className="flex items-center gap-2 ">
+                    <Select
+                      value={switchBalanceCalculationType}
+                      onValueChange={(value) => setSwitchBalanceCalculationType(value as "deposit" | "bonus" | "both" | "fixed")}
+                    >
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="deposit">Deposit</SelectItem>
+                        <SelectItem value="bonus">Bonus</SelectItem>
+                        <SelectItem value="both">Both</SelectItem>
+                        <SelectItem value="fixed">Fixed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-lg">✕</span>
+                    <Input
+                      id="switchBalanceMultiplier"
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      value={switchBalanceMultiplier}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        if (value > 99999) {
+                          return;
+                        }
+                        if (value > 0) {
+                          setSwitchBalanceMultiplier(value);
+                        }
+                      }}
+                      className="w-[120px]"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Balance threshold to switch from Game 1 to Game 2
+                </p>
+              </div>
+
             </CardContent>
           ) : (
             <CardContent>
@@ -1605,28 +1773,6 @@ export default function EVSimulatorPage() {
           )}
         </Card>
       </div>
-
-      {/* SWITCH BALANCE CONFIGURATION */}
-      {game2Enabled && (
-        <Card className="mb-6 bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900">
-          <CardContent className="pt-6">
-            <div className="space-y-2 max-w-md">
-              <Label htmlFor="game2SwitchBalance">Switch Balance ($)</Label>
-              <Input
-                id="game2SwitchBalance"
-                type="number"
-                value={game2SwitchBalance}
-                onChange={(e) => setGame2SwitchBalance(Number(e.target.value))}
-                placeholder="400"
-                className="bg-white dark:bg-gray-950"
-              />
-              <p className="text-xs text-muted-foreground">
-                Balance threshold to switch from Game 1 to Game 2
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* COVERPLAY CONFIGURATIONS - SIDE BY SIDE */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -1653,7 +1799,7 @@ export default function EVSimulatorPage() {
             {/* Line 1: Game and Game Type */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="preCoverplayCategory">Game</Label>
+                <Label htmlFor="preCoverplayCategory">Game Type</Label>
                 <Select value={preCoverplayCategory} onValueChange={(v) => {
                   const newCategory = v as GameCategory;
                   setPreCoverplayCategory(newCategory);
@@ -1671,7 +1817,9 @@ export default function EVSimulatorPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="roulette">Roulette</SelectItem>
+                    <SelectItem value="european_roulette">European Roulette</SelectItem>
+                    <SelectItem value="american_roulette">American Roulette</SelectItem>
+                    <SelectItem value="french_roulette">French Roulette</SelectItem>
                     <SelectItem value="baccarat">Baccarat</SelectItem>
                     <SelectItem value="blackjack">Blackjack</SelectItem>
                     <SelectItem value="slots">Slots</SelectItem>
@@ -1682,23 +1830,21 @@ export default function EVSimulatorPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="preCoverplayType">
-                  {preCoverplayCategory === "slots" ? "Risk Level" : "Game Type"}
+                  {preCoverplayCategory === "slots" ? "Risk Level" : "Selection"}
                 </Label>
-                {preCoverplayCategory === "roulette" && (
+                {(preCoverplayCategory === "european_roulette" || preCoverplayCategory === "american_roulette" || preCoverplayCategory === "french_roulette") && (
                   <Select value={preCoverplayType} onValueChange={setPreCoverplayType}>
                     <SelectTrigger id="preCoverplayType">
-                      <SelectValue placeholder="Select type" />
+                      <SelectValue placeholder="Select bet type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="European 1s">European 1s</SelectItem>
-                      <SelectItem value="European 2s">European 2s</SelectItem>
-                      <SelectItem value="European 3s">European 3s</SelectItem>
-                      <SelectItem value="European 4s">European 4s</SelectItem>
-                      <SelectItem value="European 6s">European 6s</SelectItem>
-                      <SelectItem value="European 12s">European 12s</SelectItem>
-                      <SelectItem value="European 18s">European 18s</SelectItem>
-                      <SelectItem value="American 18s">American 18s</SelectItem>
-                      <SelectItem value="French 18s">French 18s</SelectItem>
+                      <SelectItem value="1s">1s</SelectItem>
+                      <SelectItem value="2s">2s</SelectItem>
+                      <SelectItem value="3s">3s</SelectItem>
+                      <SelectItem value="4s">4s</SelectItem>
+                      <SelectItem value="6s">6s</SelectItem>
+                      <SelectItem value="12s">12s</SelectItem>
+                      <SelectItem value="18s">18s</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -1857,7 +2003,7 @@ export default function EVSimulatorPage() {
             {/* Line 1: Game and Game Type */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="postCoverplayCategory">Game</Label>
+                <Label htmlFor="postCoverplayCategory">Game Type</Label>
                 <Select value={postCoverplayCategory} onValueChange={(v) => {
                   const newCategory = v as GameCategory;
                   setPostCoverplayCategory(newCategory);
@@ -1875,7 +2021,9 @@ export default function EVSimulatorPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="roulette">Roulette</SelectItem>
+                    <SelectItem value="european_roulette">European Roulette</SelectItem>
+                    <SelectItem value="american_roulette">American Roulette</SelectItem>
+                    <SelectItem value="french_roulette">French Roulette</SelectItem>
                     <SelectItem value="baccarat">Baccarat</SelectItem>
                     <SelectItem value="blackjack">Blackjack</SelectItem>
                     <SelectItem value="slots">Slots</SelectItem>
@@ -1886,23 +2034,21 @@ export default function EVSimulatorPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="postCoverplayType">
-                  {postCoverplayCategory === "slots" ? "Risk Level" : "Game Type"}
+                  {postCoverplayCategory === "slots" ? "Risk Level" : "Selection"}
                 </Label>
-                {postCoverplayCategory === "roulette" && (
+                {(postCoverplayCategory === "european_roulette" || postCoverplayCategory === "american_roulette" || postCoverplayCategory === "french_roulette") && (
                   <Select value={postCoverplayType} onValueChange={setPostCoverplayType}>
                     <SelectTrigger id="postCoverplayType">
-                      <SelectValue placeholder="Select type" />
+                      <SelectValue placeholder="Select bet type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="European 1s">European 1s</SelectItem>
-                      <SelectItem value="European 2s">European 2s</SelectItem>
-                      <SelectItem value="European 3s">European 3s</SelectItem>
-                      <SelectItem value="European 4s">European 4s</SelectItem>
-                      <SelectItem value="European 6s">European 6s</SelectItem>
-                      <SelectItem value="European 12s">European 12s</SelectItem>
-                      <SelectItem value="European 18s">European 18s</SelectItem>
-                      <SelectItem value="American 18s">American 18s</SelectItem>
-                      <SelectItem value="French 18s">French 18s</SelectItem>
+                      <SelectItem value="1s">1s</SelectItem>
+                      <SelectItem value="2s">2s</SelectItem>
+                      <SelectItem value="3s">3s</SelectItem>
+                      <SelectItem value="4s">4s</SelectItem>
+                      <SelectItem value="6s">6s</SelectItem>
+                      <SelectItem value="12s">12s</SelectItem>
+                      <SelectItem value="18s">18s</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -2039,27 +2185,6 @@ export default function EVSimulatorPage() {
         )}
       </div>
 
-      {/* SIMULATION PARAMETERS */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Simulation Parameters</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="numSessions">Number of Sessions</Label>
-            <Input
-              id="numSessions"
-              type="number"
-              value={numSessions}
-              onChange={(e) => setNumSessions(Number(e.target.value))}
-              placeholder="1000000"
-            />
-            <p className="text-xs text-muted-foreground">
-              Higher values = more accurate results but slower
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* SUBMIT BUTTON */}
       <div className="flex flex-col gap-4 mb-6">

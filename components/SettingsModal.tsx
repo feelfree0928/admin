@@ -14,39 +14,25 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 interface GlobalConfig {
   defaults: {
     timePerBet: {
-      bj: number;
-      european_1s: number;
-      european_2s: number;
-      european_3s: number;
-      european_4s: number;
-      european_6s: number;
-      european_12s: number;
-      european_18s: number;
-      american_18s: number;
-      french_18s: number;
-      baccarat_player: number;
-      baccarat_banker: number;
-      baccarat_tie: number;
+      roulette: number;  // Single entry for all roulette types
+      blackjack: number;
+      baccarat: number;  // Single entry for all baccarat types
       slots: number;
       digits: number;
     };
     houseEdges: {
-      bj: number;
-      european_1s: number;
-      european_2s: number;
-      european_3s: number;
-      european_4s: number;
-      european_6s: number;
-      european_12s: number;
-      european_18s: number;
-      american_18s: number;
-      french_18s: number;
+      european_roulette: number;
+      american_roulette: number;
+      french_roulette_standard: number;
+      french_roulette_18s: number;
+      blackjack: number;
       baccarat_player: number;
       baccarat_banker: number;
       baccarat_tie: number;
       slots: number;
       digits: number | null;
     };
+    numSessions: number;
   };
   features: {
     preCoverplayEnabled: boolean;
@@ -166,6 +152,19 @@ export function SettingsModal({ open, onOpenChange, currentConfig, onConfigUpdat
     }
   };
 
+  const updateNumSessions = (value: string) => {
+    const numValue = parseInt(value, 10);
+    if (!isNaN(numValue) && numValue > 0 && config) {
+      setConfig({
+        ...config,
+        defaults: {
+          ...config.defaults,
+          numSessions: numValue
+        }
+      });
+    }
+  };
+
   const updateFeature = (feature: keyof GlobalConfig['features'], value: boolean) => {
     if (config) {
       setConfig({
@@ -200,301 +199,186 @@ export function SettingsModal({ open, onOpenChange, currentConfig, onConfigUpdat
             </Alert>
           )}
 
-          <Tabs defaultValue="defaults" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="defaults">Game Defaults</TabsTrigger>
-              <TabsTrigger value="features">Features</TabsTrigger>
+          <Tabs defaultValue="timePerBet" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="timePerBet">Time Per Bet</TabsTrigger>
+              <TabsTrigger value="houseEdge">House Edge</TabsTrigger>
+              <TabsTrigger value="simulation">Simulation</TabsTrigger>
+              <TabsTrigger value="features">Coverplay</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="defaults" className="space-y-4">
+            {/* Time Per Bet Tab */}
+            <TabsContent value="timePerBet" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Game Defaults</CardTitle>
+                  <CardTitle>Time Per Bet</CardTitle>
                   <CardDescription>
-                    Set default time per bet and house edge percentages for each game type
+                    Set default time per bet (in seconds) for each game category
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Blackjack */}
-                  <div>
-                    <h4 className="font-semibold mb-3">Blackjack</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="tpb-bj">Time Per Bet (seconds)</Label>
-                        <Input
-                          id="tpb-bj"
-                          type="number"
-                          step="0.1"
-                          min="0.1"
-                          value={config.defaults.timePerBet.bj}
-                          onChange={(e) => updateTimePerBet('bj', e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="he-bj">House Edge (%)</Label>
-                        <Input
-                          id="he-bj"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={config.defaults.houseEdges.bj}
-                          onChange={(e) => updateHouseEdge('bj', e.target.value)}
-                        />
-                      </div>
-                    </div>
+                  {/* Roulette */}
+                  <div className="space-y-2">
+                    <Label htmlFor="tpb-roulette">Roulette (All Types)</Label>
+                    <Input
+                      id="tpb-roulette"
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      value={config.defaults.timePerBet.roulette}
+                      onChange={(e) => updateTimePerBet('roulette', e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Applies to all European, American, and French Roulette variants
+                    </p>
                   </div>
 
+                  {/* Blackjack */}
+                  <div className="space-y-2">
+                    <Label htmlFor="tpb-blackjack">Blackjack</Label>
+                    <Input
+                      id="tpb-blackjack"
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      value={config.defaults.timePerBet.blackjack}
+                      onChange={(e) => updateTimePerBet('blackjack', e.target.value)}
+                    />
+                  </div>
+
+                  {/* Baccarat */}
+                  <div className="space-y-2">
+                    <Label htmlFor="tpb-baccarat">Baccarat (All Types)</Label>
+                    <Input
+                      id="tpb-baccarat"
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      value={config.defaults.timePerBet.baccarat}
+                      onChange={(e) => updateTimePerBet('baccarat', e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Applies to Player, Banker, and Tie variants
+                    </p>
+                  </div>
+
+                  {/* Slots */}
+                  <div className="space-y-2">
+                    <Label htmlFor="tpb-slots">Slots (All Risk Levels)</Label>
+                    <Input
+                      id="tpb-slots"
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      value={config.defaults.timePerBet.slots}
+                      onChange={(e) => updateTimePerBet('slots', e.target.value)}
+                    />
+                  </div>
+
+                  {/* Digits */}
+                  <div className="space-y-2">
+                    <Label htmlFor="tpb-digits">Digits</Label>
+                    <Input
+                      id="tpb-digits"
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      value={config.defaults.timePerBet.digits}
+                      onChange={(e) => updateTimePerBet('digits', e.target.value)}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* House Edge Tab */}
+            <TabsContent value="houseEdge" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>House Edge</CardTitle>
+                  <CardDescription>
+                    Set default house edge percentages for each game type
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
                   {/* Roulette */}
                   <div>
                     <h4 className="font-semibold mb-3">Roulette</h4>
                     <div className="space-y-4">
-                      {/* European 1s */}
+                      {/* European and American Roulette House Edge */}
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="tpb-european_1s">Time Per Bet (seconds) - European 1s</Label>
+                          <Label htmlFor="he-european_roulette">European Roulette</Label>
                           <Input
-                            id="tpb-european_1s"
-                            type="number"
-                            step="0.1"
-                            min="0.1"
-                            value={config.defaults.timePerBet.european_1s}
-                            onChange={(e) => updateTimePerBet('european_1s', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="he-european_1s">House Edge (%) - European 1s</Label>
-                          <Input
-                            id="he-european_1s"
+                            id="he-european_roulette"
                             type="number"
                             step="0.01"
                             min="0"
-                            value={config.defaults.houseEdges.european_1s}
-                            onChange={(e) => updateHouseEdge('european_1s', e.target.value)}
+                            value={config.defaults.houseEdges.european_roulette}
+                            onChange={(e) => updateHouseEdge('european_roulette', e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="he-american_roulette">American Roulette</Label>
+                          <Input
+                            id="he-american_roulette"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={config.defaults.houseEdges.american_roulette}
+                            onChange={(e) => updateHouseEdge('american_roulette', e.target.value)}
                           />
                         </div>
                       </div>
-                      {/* European 2s */}
+                      {/* French Roulette (Standard) and (18s) House Edge */}
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="tpb-european_2s">Time Per Bet (seconds) - European 2s</Label>
+                          <Label htmlFor="he-french_roulette_standard">French Roulette (Standard)</Label>
                           <Input
-                            id="tpb-european_2s"
-                            type="number"
-                            step="0.1"
-                            min="0.1"
-                            value={config.defaults.timePerBet.european_2s}
-                            onChange={(e) => updateTimePerBet('european_2s', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="he-european_2s">House Edge (%) - European 2s</Label>
-                          <Input
-                            id="he-european_2s"
+                            id="he-french_roulette_standard"
                             type="number"
                             step="0.01"
                             min="0"
-                            value={config.defaults.houseEdges.european_2s}
-                            onChange={(e) => updateHouseEdge('european_2s', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      {/* European 3s */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="tpb-european_3s">Time Per Bet (seconds) - European 3s</Label>
-                          <Input
-                            id="tpb-european_3s"
-                            type="number"
-                            step="0.1"
-                            min="0.1"
-                            value={config.defaults.timePerBet.european_3s}
-                            onChange={(e) => updateTimePerBet('european_3s', e.target.value)}
+                            value={config.defaults.houseEdges.french_roulette_standard}
+                            onChange={(e) => updateHouseEdge('french_roulette_standard', e.target.value)}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="he-european_3s">House Edge (%) - European 3s</Label>
+                          <Label htmlFor="he-french_roulette_18s">French Roulette (18s)</Label>
                           <Input
-                            id="he-european_3s"
+                            id="he-french_roulette_18s"
                             type="number"
                             step="0.01"
                             min="0"
-                            value={config.defaults.houseEdges.european_3s}
-                            onChange={(e) => updateHouseEdge('european_3s', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      {/* European 4s */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="tpb-european_4s">Time Per Bet (seconds) - European 4s</Label>
-                          <Input
-                            id="tpb-european_4s"
-                            type="number"
-                            step="0.1"
-                            min="0.1"
-                            value={config.defaults.timePerBet.european_4s}
-                            onChange={(e) => updateTimePerBet('european_4s', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="he-european_4s">House Edge (%) - European 4s</Label>
-                          <Input
-                            id="he-european_4s"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={config.defaults.houseEdges.european_4s}
-                            onChange={(e) => updateHouseEdge('european_4s', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      {/* European 6s */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="tpb-european_6s">Time Per Bet (seconds) - European 6s</Label>
-                          <Input
-                            id="tpb-european_6s"
-                            type="number"
-                            step="0.1"
-                            min="0.1"
-                            value={config.defaults.timePerBet.european_6s}
-                            onChange={(e) => updateTimePerBet('european_6s', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="he-european_6s">House Edge (%) - European 6s</Label>
-                          <Input
-                            id="he-european_6s"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={config.defaults.houseEdges.european_6s}
-                            onChange={(e) => updateHouseEdge('european_6s', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      {/* European 12s */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="tpb-european_12s">Time Per Bet (seconds) - European 12s</Label>
-                          <Input
-                            id="tpb-european_12s"
-                            type="number"
-                            step="0.1"
-                            min="0.1"
-                            value={config.defaults.timePerBet.european_12s}
-                            onChange={(e) => updateTimePerBet('european_12s', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="he-european_12s">House Edge (%) - European 12s</Label>
-                          <Input
-                            id="he-european_12s"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={config.defaults.houseEdges.european_12s}
-                            onChange={(e) => updateHouseEdge('european_12s', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      {/* European 18s */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="tpb-european_18s">Time Per Bet (seconds) - European 18s</Label>
-                          <Input
-                            id="tpb-european_18s"
-                            type="number"
-                            step="0.1"
-                            min="0.1"
-                            value={config.defaults.timePerBet.european_18s}
-                            onChange={(e) => updateTimePerBet('european_18s', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="he-european_18s">House Edge (%) - European 18s</Label>
-                          <Input
-                            id="he-european_18s"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={config.defaults.houseEdges.european_18s}
-                            onChange={(e) => updateHouseEdge('european_18s', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      {/* American 18s */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="tpb-american_18s">Time Per Bet (seconds) - American 18s</Label>
-                          <Input
-                            id="tpb-american_18s"
-                            type="number"
-                            step="0.1"
-                            min="0.1"
-                            value={config.defaults.timePerBet.american_18s}
-                            onChange={(e) => updateTimePerBet('american_18s', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="he-american_18s">House Edge (%) - American 18s</Label>
-                          <Input
-                            id="he-american_18s"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={config.defaults.houseEdges.american_18s}
-                            onChange={(e) => updateHouseEdge('american_18s', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      {/* French 18s */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="tpb-french_18s">Time Per Bet (seconds) - French 18s</Label>
-                          <Input
-                            id="tpb-french_18s"
-                            type="number"
-                            step="0.1"
-                            min="0.1"
-                            value={config.defaults.timePerBet.french_18s}
-                            onChange={(e) => updateTimePerBet('french_18s', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="he-french_18s">House Edge (%) - French 18s</Label>
-                          <Input
-                            id="he-french_18s"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={config.defaults.houseEdges.french_18s}
-                            onChange={(e) => updateHouseEdge('french_18s', e.target.value)}
+                            value={config.defaults.houseEdges.french_roulette_18s}
+                            onChange={(e) => updateHouseEdge('french_roulette_18s', e.target.value)}
                           />
                         </div>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Blackjack */}
+                  <div className="space-y-2">
+                    <h4 className="font-semibold mb-3">Blackjack</h4>
+                    <Input
+                      id="he-blackjack"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={config.defaults.houseEdges.blackjack}
+                      onChange={(e) => updateHouseEdge('blackjack', e.target.value)}
+                    />
                   </div>
 
                   {/* Baccarat */}
                   <div>
                     <h4 className="font-semibold mb-3">Baccarat</h4>
                     <div className="space-y-4">
-                      {/* Baccarat Player */}
+                      {/* Baccarat Player and Banker House Edge */}
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="tpb-baccarat_player">Time Per Bet (seconds) - Baccarat Player</Label>
-                          <Input
-                            id="tpb-baccarat_player"
-                            type="number"
-                            step="0.1"
-                            min="0.1"
-                            value={config.defaults.timePerBet.baccarat_player}
-                            onChange={(e) => updateTimePerBet('baccarat_player', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="he-baccarat_player">House Edge (%) - Baccarat Player</Label>
+                          <Label htmlFor="he-baccarat_player">Baccarat Player</Label>
                           <Input
                             id="he-baccarat_player"
                             type="number"
@@ -504,22 +388,8 @@ export function SettingsModal({ open, onOpenChange, currentConfig, onConfigUpdat
                             onChange={(e) => updateHouseEdge('baccarat_player', e.target.value)}
                           />
                         </div>
-                      </div>
-                      {/* Baccarat Banker */}
-                      <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="tpb-baccarat_banker">Time Per Bet (seconds) - Baccarat Banker</Label>
-                          <Input
-                            id="tpb-baccarat_banker"
-                            type="number"
-                            step="0.1"
-                            min="0.1"
-                            value={config.defaults.timePerBet.baccarat_banker}
-                            onChange={(e) => updateTimePerBet('baccarat_banker', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="he-baccarat_banker">House Edge (%) - Baccarat Banker</Label>
+                          <Label htmlFor="he-baccarat_banker">Baccarat Banker</Label>
                           <Input
                             id="he-baccarat_banker"
                             type="number"
@@ -530,21 +400,10 @@ export function SettingsModal({ open, onOpenChange, currentConfig, onConfigUpdat
                           />
                         </div>
                       </div>
-                      {/* Baccarat Tie */}
+                      {/* Baccarat Tie House Edge */}
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="tpb-baccarat_tie">Time Per Bet (seconds) - Baccarat Tie</Label>
-                          <Input
-                            id="tpb-baccarat_tie"
-                            type="number"
-                            step="0.1"
-                            min="0.1"
-                            value={config.defaults.timePerBet.baccarat_tie}
-                            onChange={(e) => updateTimePerBet('baccarat_tie', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="he-baccarat_tie">House Edge (%) - Baccarat Tie</Label>
+                          <Label htmlFor="he-baccarat_tie">Baccarat Tie</Label>
                           <Input
                             id="he-baccarat_tie"
                             type="number"
@@ -554,68 +413,50 @@ export function SettingsModal({ open, onOpenChange, currentConfig, onConfigUpdat
                             onChange={(e) => updateHouseEdge('baccarat_tie', e.target.value)}
                           />
                         </div>
+                        <div></div>
                       </div>
                     </div>
                   </div>
 
                   {/* Slots */}
-                  <div>
-                    <h4 className="font-semibold mb-3">Slots</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="tpb-slots">Time Per Bet (seconds) - Slots (all risk levels)</Label>
-                        <Input
-                          id="tpb-slots"
-                          type="number"
-                          step="0.1"
-                          min="0.1"
-                          value={config.defaults.timePerBet.slots}
-                          onChange={(e) => updateTimePerBet('slots', e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="he-slots">House Edge (%) - Slots (all risk levels)</Label>
-                        <Input
-                          id="he-slots"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={config.defaults.houseEdges.slots}
-                          onChange={(e) => updateHouseEdge('slots', e.target.value)}
-                        />
-                      </div>
-                    </div>
+                  <div className="space-y-2">
+                    <h4 className="font-semibold mb-3">Slots (All Risk Levels)</h4>
+                    <Input
+                      id="he-slots"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={config.defaults.houseEdges.slots}
+                      onChange={(e) => updateHouseEdge('slots', e.target.value)}
+                    />
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-                  {/* Digits */}
-                  <div>
-                    <h4 className="font-semibold mb-3">Digits</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="tpb-digits">Time Per Bet (seconds) - Digits</Label>
-                        <Input
-                          id="tpb-digits"
-                          type="number"
-                          step="0.1"
-                          min="0.1"
-                          value={config.defaults.timePerBet.digits}
-                          onChange={(e) => updateTimePerBet('digits', e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="he-digits">House Edge (%) - Digits</Label>
-                        <Input
-                          id="he-digits"
-                          type="text"
-                          value="Variable based on threshold"
-                          disabled
-                          className="bg-muted cursor-not-allowed"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          House edge for Digits is calculated dynamically based on the selected threshold
-                        </p>
-                      </div>
-                    </div>
+            {/* Simulation Tab */}
+            <TabsContent value="simulation" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Simulation Parameters</CardTitle>
+                  <CardDescription>
+                    Set default simulation parameters for all users
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="numSessions">Number of Sessions</Label>
+                    <Input
+                      id="numSessions"
+                      type="number"
+                      step="1000"
+                      min="1000"
+                      value={config.defaults.numSessions}
+                      onChange={(e) => updateNumSessions(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Higher values = more accurate results but slower. Recommended: 1,000,000 or higher.
+                    </p>
                   </div>
                 </CardContent>
               </Card>
