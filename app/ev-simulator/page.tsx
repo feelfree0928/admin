@@ -1744,8 +1744,8 @@ export default function EVSimulatorPage() {
                     <Input
                       id="switchBalanceMultiplier"
                       type="number"
-                      step="0.1"
-                      min="0.1"
+                      step="1"
+                      min="1"
                       value={switchBalanceMultiplier}
                       onChange={(e) => {
                         const value = Number(e.target.value);
