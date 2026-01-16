@@ -163,7 +163,7 @@ export default function EVSimulatorPage() {
   const [game2Weighting, setGame2Weighting] = useState<number>(100.0);
   const [game2SwitchBalance, setGame2SwitchBalance] = useState<number>(400);
   const [switchBalanceCalculationType, setSwitchBalanceCalculationType] = useState<"deposit" | "bonus" | "both" | "fixed">("bonus");
-  const [switchBalanceMultiplier, setSwitchBalanceMultiplier] = useState<number>(30);
+  const [switchBalanceMultiplier, setSwitchBalanceMultiplier] = useState<number>(4);
   const [game2HouseEdge, setGame2HouseEdge] = useState<number | null>(null);
   const [game2HouseEdgeLocked, setGame2HouseEdgeLocked] = useState<boolean>(true);
   const [game2DigitsType, setGame2DigitsType] = useState<string>("0 & Under");
