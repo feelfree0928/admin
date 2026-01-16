@@ -1088,7 +1088,7 @@ export default function EVSimulatorPage() {
                   <SelectItem value="cashback">Cashback</SelectItem>
                   {/* <SelectItem value="sticky">Sticky</SelectItem>
                   <SelectItem value="freespins">Free Spins</SelectItem> */}
-                  <SelectItem value="raw">Raw (Single Bet)</SelectItem>
+                  <SelectItem value="raw">Raw</SelectItem>
                 </SelectContent>
               </Select>
             </div>
