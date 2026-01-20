@@ -96,9 +96,21 @@ interface SimulationResults {
   cash_per_hour: number;
   total_wagered_average: number;
   std_deviation: number;
+  variance?: number;
   confidence_interval_95: {
     lower: number;
     upper: number;
+  };
+  loss_win_probabilities?: {
+    loss_100_percent: number;
+    loss_50_percent: number;
+    loss_25_percent: number;
+    loss_10_percent: number;
+    break_even: number;
+    win_10_percent: number;
+    win_25_percent: number;
+    win_50_percent: number;
+    win_100_percent: number;
   };
 }
 
@@ -809,7 +821,7 @@ export default function EVSimulatorPage() {
     const isBackendOnline = await testBackendConnection();
     if (!isBackendOnline) {
       setError(
-        "Cannot connect to backend. Please ensure the Julia backend is running on http://5.78.132.169:8000. Run 'julia server.jl' in the ev-simulator-julia directory."
+        "Cannot connect to backend. Please ensure the Julia backend is running."
       );
       setLoading(false);
       return;
@@ -823,7 +835,7 @@ export default function EVSimulatorPage() {
         bonus_amount: bonusAmount,
       };
 
-      if (bonusType !== "raw" && bonusType !== "freespins") {
+      if (bonusType !== "freespins") {
         bonusConfig.wagering = wagering;
       }
 
@@ -1062,8 +1074,7 @@ export default function EVSimulatorPage() {
           <Alert variant="destructive" className="mt-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Cannot connect to backend at http://5.78.132.169:8000. Please ensure the Julia backend is running. 
-              Run <code className="px-1 py-0.5 bg-muted rounded">julia server.jl</code> in the ev-simulator-julia directory.
+              Cannot connect to backend at http://5.78.132.169:8000. Please ensure the Julia backend is running.
             </AlertDescription>
           </Alert>
         )}
@@ -1130,6 +1141,19 @@ export default function EVSimulatorPage() {
                   </div>
                 )}
               </>
+            )}
+
+            {bonusType === "raw" && (
+              <div className="space-y-2">
+                <Label htmlFor="wagering">Wagering Requirement ($)</Label>
+                <Input
+                  id="wagering"
+                  type="number"
+                  value={wagering}
+                  onChange={(e) => setWagering(Number(e.target.value))}
+                  placeholder="10000"
+                />
+              </div>
             )}
           </div>
 
@@ -2330,6 +2354,12 @@ export default function EVSimulatorPage() {
                   <span className="text-sm text-muted-foreground">Standard Deviation</span>
                   <span className="font-medium">{formatCurrency(results.results.std_deviation)}</span>
                 </div>
+                {results.results.variance !== undefined && (
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-sm text-muted-foreground">Variance</span>
+                    <span className="font-medium">{formatCurrency(results.results.variance)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center py-2 border-b">
                   <span className="text-sm text-muted-foreground">Avg Wagered</span>
                   <span className="font-medium">{formatCurrency(results.results.total_wagered_average)}</span>
@@ -2339,6 +2369,137 @@ export default function EVSimulatorPage() {
                   <span className="font-medium">{results.execution_time_ms.toFixed(2)}ms</span>
                 </div>
               </div>
+
+              {/* Loss & Win Probabilities Section */}
+              {results.results.loss_win_probabilities && (
+                <div className="mt-6 pt-6 border-t">
+                  <div className="flex items-center gap-2 mb-6">
+                    <TrendingUp className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="text-xl font-bold">Risk Analysis</h3>
+                    <span className="text-sm text-muted-foreground">(Loss & Win Probabilities)</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Loss Probabilities Card */}
+                    <Card className="border-red-200 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center gap-2">
+                          <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+                          <CardTitle className="text-base font-semibold text-red-700 dark:text-red-400">
+                            Probability of Losing
+                          </CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {[
+                          { label: "100%", amount: -wagering, value: results.results.loss_win_probabilities.loss_100_percent, severity: "high" },
+                          { label: "50%", amount: -wagering * 0.5, value: results.results.loss_win_probabilities.loss_50_percent, severity: "high" },
+                          { label: "25%", amount: -wagering * 0.25, value: results.results.loss_win_probabilities.loss_25_percent, severity: "medium" },
+                          { label: "10%", amount: -wagering * 0.1, value: results.results.loss_win_probabilities.loss_10_percent, severity: "low" },
+                        ].map((item, idx) => (
+                          <div key={idx} className="space-y-1.5">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-muted-foreground">
+                                  Lose {item.label} or more
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  ({formatCurrency(item.amount)})
+                                </span>
+                              </div>
+                              <span className="text-sm font-bold text-red-600 dark:text-red-400">
+                                {formatPercentage(item.value)}
+                              </span>
+                            </div>
+                            <div className="w-full bg-red-100 dark:bg-red-950/40 rounded-full h-2.5 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all ${
+                                  item.severity === "high" 
+                                    ? "bg-gradient-to-r from-red-500 to-red-600" 
+                                    : item.severity === "medium"
+                                    ? "bg-gradient-to-r from-red-400 to-red-500"
+                                    : "bg-gradient-to-r from-red-300 to-red-400"
+                                }`}
+                                style={{ width: `${Math.min(item.value, 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+
+                    {/* Win Probabilities Card */}
+                    <Card className="border-green-200 dark:border-green-900 bg-green-50/50 dark:bg-green-950/20">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          <CardTitle className="text-base font-semibold text-green-700 dark:text-green-400">
+                            Probability of Winning
+                          </CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {[
+                          { label: "10%", amount: wagering * 0.1, value: results.results.loss_win_probabilities.win_10_percent, severity: "low" },
+                          { label: "25%", amount: wagering * 0.25, value: results.results.loss_win_probabilities.win_25_percent, severity: "medium" },
+                          { label: "50%", amount: wagering * 0.5, value: results.results.loss_win_probabilities.win_50_percent, severity: "high" },
+                          { label: "100%", amount: wagering, value: results.results.loss_win_probabilities.win_100_percent, severity: "high" },
+                        ].map((item, idx) => (
+                          <div key={idx} className="space-y-1.5">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-muted-foreground">
+                                  Win {item.label} or more
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  ({formatCurrency(item.amount)})
+                                </span>
+                              </div>
+                              <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                                {formatPercentage(item.value)}
+                              </span>
+                            </div>
+                            <div className="w-full bg-green-100 dark:bg-green-950/40 rounded-full h-2.5 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all ${
+                                  item.severity === "high" 
+                                    ? "bg-gradient-to-r from-green-500 to-green-600" 
+                                    : item.severity === "medium"
+                                    ? "bg-gradient-to-r from-green-400 to-green-500"
+                                    : "bg-gradient-to-r from-green-300 to-green-400"
+                                }`}
+                                style={{ width: `${Math.min(item.value, 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Break Even Card */}
+                  <Card className="mt-4 border-2 border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-950/20">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-yellow-100 dark:bg-yellow-900/50 flex items-center justify-center">
+                            <span className="text-lg font-bold text-yellow-700 dark:text-yellow-400">=</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Break Even or Lose</p>
+                            <p className="text-xs text-muted-foreground">Probability of profit ≤ $0</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">
+                            {formatPercentage(results.results.loss_win_probabilities.break_even)}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </CardContent>
           </Card>
 
