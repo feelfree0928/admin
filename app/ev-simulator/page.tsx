@@ -46,6 +46,11 @@ interface BonusConfig {
   freespins_bet_size?: number;
   freespins_rollover?: boolean;
   freespins_rollover_multiplier?: number;
+  // Post-Wager specific
+  use_bonus_wagering_multiplier?: boolean;
+  bonus_wagering_multiplier?: number;
+  bonus_wagering_requirement?: number;
+  apply_bonus_play?: boolean;
   // Max cashout
   max_cashout?: number | null;
 }
@@ -75,6 +80,8 @@ interface SimulationRequest {
   bonus: BonusConfig;
   game1: GameConfig;
   game2?: GameConfig | null;
+  bonus_game1?: GameConfig;
+  bonus_game2?: GameConfig;
   pre_coverplay?: CoverplayConfig;
   post_coverplay?: CoverplayConfig;
   simulation: {
@@ -147,6 +154,73 @@ export default function EVSimulatorPage() {
   const [cashbackCap, setCashbackCap] = useState<number>(50);
   const [cashbackAsBonus, setCashbackAsBonus] = useState<boolean>(false);
   const [cashbackWageringRequirement, setCashbackWageringRequirement] = useState<number>(0);
+  
+  // Post-Wager bonus wagering state
+  const [applyBonusPlay, setApplyBonusPlay] = useState<boolean>(true);
+  const [bonusWageringRequirement, setBonusWageringRequirement] = useState<number>(0);
+  const [bonusWageringCalculationType, setBonusWageringCalculationType] = useState<"bonus" | "fixed">("bonus");
+  const [bonusWageringMultiplier, setBonusWageringMultiplier] = useState<number>(1);
+  // Bonus Game 1 state
+  const [bonusGame1Name, setBonusGame1Name] = useState<GameName>("bj");
+  const [bonusGame1Category, setBonusGame1Category] = useState<GameCategory>("blackjack");
+  const [bonusGame1Type, setBonusGame1Type] = useState<string>("");
+  const [bonusGame1BetSize, setBonusGame1BetSize] = useState<number>(5);
+  const [bonusGame1TimePerBet, setBonusGame1TimePerBet] = useState<number>(3);
+  const [bonusGame1Contribution, setBonusGame1Contribution] = useState<number>(100);
+  const [bonusGame1HouseEdge, setBonusGame1HouseEdge] = useState<number | null>(null);
+  const [bonusGame1HouseEdgeLocked, setBonusGame1HouseEdgeLocked] = useState<boolean>(true);
+  const [bonusGame1Risk, setBonusGame1Risk] = useState<RiskLevel>("medium");
+  const [bonusGame1DigitsType, setBonusGame1DigitsType] = useState<string>("0 & Under");
+  
+  // Bonus Game 2 state
+  const [bonusGame2Enabled, setBonusGame2Enabled] = useState<boolean>(false);
+  const [bonusGame2Name, setBonusGame2Name] = useState<GameName>("bj");
+  const [bonusGame2Category, setBonusGame2Category] = useState<GameCategory>("blackjack");
+  const [bonusGame2Type, setBonusGame2Type] = useState<string>("");
+  const [bonusGame2BetSize, setBonusGame2BetSize] = useState<number>(5);
+  const [bonusGame2TimePerBet, setBonusGame2TimePerBet] = useState<number>(3);
+  const [bonusGame2Contribution, setBonusGame2Contribution] = useState<number>(100);
+  const [bonusGame2SwitchBalance, setBonusGame2SwitchBalance] = useState<number>(400);
+  const [bonusGame2SwitchBalanceCalculationType, setBonusGame2SwitchBalanceCalculationType] = useState<"deposit" | "bonus" | "both" | "fixed">("bonus");
+  const [bonusGame2SwitchBalanceMultiplier, setBonusGame2SwitchBalanceMultiplier] = useState<number>(30);
+  const [bonusGame2HouseEdge, setBonusGame2HouseEdge] = useState<number | null>(null);
+  const [bonusGame2HouseEdgeLocked, setBonusGame2HouseEdgeLocked] = useState<boolean>(true);
+  const [bonusGame2Risk, setBonusGame2Risk] = useState<RiskLevel>("medium");
+  const [bonusGame2DigitsType, setBonusGame2DigitsType] = useState<string>("0 & Under");
+
+  // Cashback bonus wagering state
+  const [applyCashbackBonusPlay, setApplyCashbackBonusPlay] = useState<boolean>(true);
+  const [cashbackBonusWageringRequirement, setCashbackBonusWageringRequirement] = useState<number>(0);
+  const [cashbackBonusWageringCalculationType, setCashbackBonusWageringCalculationType] = useState<"cashback" | "fixed">("cashback");
+  const [cashbackBonusWageringMultiplier, setCashbackBonusWageringMultiplier] = useState<number>(1);
+  // Cashback Bonus Game 1 state
+  const [cashbackBonusGame1Name, setCashbackBonusGame1Name] = useState<GameName>("bj");
+  const [cashbackBonusGame1Category, setCashbackBonusGame1Category] = useState<GameCategory>("blackjack");
+  const [cashbackBonusGame1Type, setCashbackBonusGame1Type] = useState<string>("");
+  const [cashbackBonusGame1BetSize, setCashbackBonusGame1BetSize] = useState<number>(5);
+  const [cashbackBonusGame1TimePerBet, setCashbackBonusGame1TimePerBet] = useState<number>(3);
+  const [cashbackBonusGame1Contribution, setCashbackBonusGame1Contribution] = useState<number>(100);
+  const [cashbackBonusGame1HouseEdge, setCashbackBonusGame1HouseEdge] = useState<number | null>(null);
+  const [cashbackBonusGame1HouseEdgeLocked, setCashbackBonusGame1HouseEdgeLocked] = useState<boolean>(true);
+  const [cashbackBonusGame1Risk, setCashbackBonusGame1Risk] = useState<RiskLevel>("medium");
+  const [cashbackBonusGame1DigitsType, setCashbackBonusGame1DigitsType] = useState<string>("0 & Under");
+  
+  // Cashback Bonus Game 2 state
+  const [cashbackBonusGame2Enabled, setCashbackBonusGame2Enabled] = useState<boolean>(false);
+  const [cashbackBonusGame2Name, setCashbackBonusGame2Name] = useState<GameName>("bj");
+  const [cashbackBonusGame2Category, setCashbackBonusGame2Category] = useState<GameCategory>("blackjack");
+  const [cashbackBonusGame2Type, setCashbackBonusGame2Type] = useState<string>("");
+  const [cashbackBonusGame2BetSize, setCashbackBonusGame2BetSize] = useState<number>(5);
+  const [cashbackBonusGame2TimePerBet, setCashbackBonusGame2TimePerBet] = useState<number>(3);
+  const [cashbackBonusGame2Contribution, setCashbackBonusGame2Contribution] = useState<number>(100);
+  const [cashbackBonusGame2SwitchBalance, setCashbackBonusGame2SwitchBalance] = useState<number>(400);
+  const [cashbackBonusGame2SwitchBalanceCalculationType, setCashbackBonusGame2SwitchBalanceCalculationType] = useState<"deposit" | "bonus" | "both" | "fixed">("bonus");
+  const [cashbackBonusGame2SwitchBalanceMultiplier, setCashbackBonusGame2SwitchBalanceMultiplier] = useState<number>(30);
+  const [cashbackBonusGame2HouseEdge, setCashbackBonusGame2HouseEdge] = useState<number | null>(null);
+  const [cashbackBonusGame2HouseEdgeLocked, setCashbackBonusGame2HouseEdgeLocked] = useState<boolean>(true);
+  const [cashbackBonusGame2Risk, setCashbackBonusGame2Risk] = useState<RiskLevel>("medium");
+  const [cashbackBonusGame2DigitsType, setCashbackBonusGame2DigitsType] = useState<string>("0 & Under");
+  
   const [freespinsCount, setFreespinsCount] = useState<number>(0);
   const [freespinsBetSize, setFreespinsBetSize] = useState<number>(0);
   const [freespinsRollover, setFreespinsRollover] = useState<boolean>(false);
@@ -645,6 +719,160 @@ export default function EVSimulatorPage() {
     }
   }, [bonusType, game2Enabled]);
 
+  // Bonus Game 1: Set default type if empty when category is set
+  useEffect(() => {
+    if (bonusGame1Type === "" && bonusGame1Category !== "blackjack") {
+      const defaultType = getDefaultGameType(bonusGame1Category);
+      if (bonusGame1Category === "slots") {
+        if (!bonusGame1Risk) {
+          setBonusGame1Risk(defaultType as RiskLevel);
+        }
+      } else if (bonusGame1Category === "digits") {
+        setBonusGame1Type(defaultType);
+        setBonusGame1DigitsType(defaultType);
+      } else {
+        setBonusGame1Type(defaultType);
+      }
+    }
+  }, [bonusGame1Category, bonusGame1Type, bonusGame1Risk]);
+
+  // Bonus Game 1: Sync bonusGame1Name with category and type
+  useEffect(() => {
+    if (bonusGame1Category === "digits") {
+      setBonusGame1Name("digits");
+      setBonusGame1DigitsType(bonusGame1Type || "0 & Under");
+    } else {
+      const newName = getGameNameFromCategoryAndType(bonusGame1Category, bonusGame1Type);
+      setBonusGame1Name(newName);
+      setBonusGame1DigitsType("");
+    }
+  }, [bonusGame1Category, bonusGame1Type]);
+
+  // Bonus Game 1: Reset house edge to default when bonusGame1Name changes
+  useEffect(() => {
+    setBonusGame1HouseEdge(null);
+    setBonusGame1HouseEdgeLocked(true);
+  }, [bonusGame1Name]);
+
+  // Bonus Game 1: Initialize category and type from name (on mount only)
+  useEffect(() => {
+    const category = getGameCategoryFromName(bonusGame1Name);
+    const type = getGameTypeFromName(bonusGame1Name, category, bonusGame1DigitsType);
+    setBonusGame1Category(category);
+    if (category === "digits") {
+      setBonusGame1Type(bonusGame1DigitsType || "0 & Under");
+    } else {
+      setBonusGame1Type(type);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
+
+  // Bonus Game 2: Set default type if empty when category is set
+  useEffect(() => {
+    if (bonusGame2Type === "" && bonusGame2Category !== "blackjack") {
+      const defaultType = getDefaultGameType(bonusGame2Category);
+      if (bonusGame2Category === "slots") {
+        if (!bonusGame2Risk) {
+          setBonusGame2Risk(defaultType as RiskLevel);
+        }
+      } else if (bonusGame2Category === "digits") {
+        setBonusGame2Type(defaultType);
+        setBonusGame2DigitsType(defaultType);
+      } else {
+        setBonusGame2Type(defaultType);
+      }
+    }
+  }, [bonusGame2Category, bonusGame2Type, bonusGame2Risk]);
+
+  // Bonus Game 2: Sync bonusGame2Name with category and type
+  useEffect(() => {
+    if (bonusGame2Category === "digits") {
+      setBonusGame2Name("digits");
+      setBonusGame2DigitsType(bonusGame2Type || "0 & Under");
+    } else {
+      const newName = getGameNameFromCategoryAndType(bonusGame2Category, bonusGame2Type);
+      setBonusGame2Name(newName);
+      setBonusGame2DigitsType("");
+    }
+  }, [bonusGame2Category, bonusGame2Type]);
+
+  // Cashback Bonus Game 1: Set default type if empty when category is set
+  useEffect(() => {
+    if (cashbackBonusGame1Type === "" && cashbackBonusGame1Category !== "blackjack") {
+      const defaultType = getDefaultGameType(cashbackBonusGame1Category);
+      if (cashbackBonusGame1Category === "slots") {
+        if (!cashbackBonusGame1Risk) {
+          setCashbackBonusGame1Risk(defaultType as RiskLevel);
+        }
+      } else if (cashbackBonusGame1Category === "digits") {
+        setCashbackBonusGame1Type(defaultType);
+        setCashbackBonusGame1DigitsType(defaultType);
+      } else {
+        setCashbackBonusGame1Type(defaultType);
+      }
+    }
+  }, [cashbackBonusGame1Category, cashbackBonusGame1Type, cashbackBonusGame1Risk]);
+
+  // Cashback Bonus Game 1: Sync cashbackBonusGame1Name with category and type
+  useEffect(() => {
+    if (cashbackBonusGame1Category === "digits") {
+      setCashbackBonusGame1Name("digits");
+      setCashbackBonusGame1DigitsType(cashbackBonusGame1Type || "0 & Under");
+    } else {
+      const newName = getGameNameFromCategoryAndType(cashbackBonusGame1Category, cashbackBonusGame1Type);
+      setCashbackBonusGame1Name(newName);
+      setCashbackBonusGame1DigitsType("");
+    }
+  }, [cashbackBonusGame1Category, cashbackBonusGame1Type]);
+
+  // Cashback Bonus Game 2: Set default type if empty when category is set
+  useEffect(() => {
+    if (cashbackBonusGame2Type === "" && cashbackBonusGame2Category !== "blackjack") {
+      const defaultType = getDefaultGameType(cashbackBonusGame2Category);
+      if (cashbackBonusGame2Category === "slots") {
+        if (!cashbackBonusGame2Risk) {
+          setCashbackBonusGame2Risk(defaultType as RiskLevel);
+        }
+      } else if (cashbackBonusGame2Category === "digits") {
+        setCashbackBonusGame2Type(defaultType);
+        setCashbackBonusGame2DigitsType(defaultType);
+      } else {
+        setCashbackBonusGame2Type(defaultType);
+      }
+    }
+  }, [cashbackBonusGame2Category, cashbackBonusGame2Type, cashbackBonusGame2Risk]);
+
+  // Cashback Bonus Game 2: Sync cashbackBonusGame2Name with category and type
+  useEffect(() => {
+    if (cashbackBonusGame2Category === "digits") {
+      setCashbackBonusGame2Name("digits");
+      setCashbackBonusGame2DigitsType(cashbackBonusGame2Type || "0 & Under");
+    } else {
+      const newName = getGameNameFromCategoryAndType(cashbackBonusGame2Category, cashbackBonusGame2Type);
+      setCashbackBonusGame2Name(newName);
+      setCashbackBonusGame2DigitsType("");
+    }
+  }, [cashbackBonusGame2Category, cashbackBonusGame2Type]);
+
+  // Bonus Game 2: Reset house edge to default when bonusGame2Name changes
+  useEffect(() => {
+    setBonusGame2HouseEdge(null);
+    setBonusGame2HouseEdgeLocked(true);
+  }, [bonusGame2Name]);
+
+  // Bonus Game 2: Initialize category and type from name (on mount only)
+  useEffect(() => {
+    const category = getGameCategoryFromName(bonusGame2Name);
+    const type = getGameTypeFromName(bonusGame2Name, category, bonusGame2DigitsType);
+    setBonusGame2Category(category);
+    if (category === "digits") {
+      setBonusGame2Type(bonusGame2DigitsType || "0 & Under");
+    } else {
+      setBonusGame2Type(type);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
+
   // Calculate switch balance based on selected type and multiplier
   const calculateSwitchBalance = (): number => {
     switch (switchBalanceCalculationType) {
@@ -658,6 +886,54 @@ export default function EVSimulatorPage() {
         return switchBalanceMultiplier;
       default:
         return deposit * switchBalanceMultiplier;
+    }
+  };
+
+  // Calculate bonus wagering requirement
+  const calculateBonusWageringRequirement = (): number => {
+    switch (bonusWageringCalculationType) {
+      case "bonus":
+        return bonusAmount * bonusWageringMultiplier;
+      case "fixed":
+        return bonusWageringMultiplier;
+      default:
+        return bonusAmount * bonusWageringMultiplier;
+    }
+  };
+
+  // Calculate cashback bonus wagering requirement
+  const calculateCashbackBonusWageringRequirement = (): number => {
+    switch (cashbackBonusWageringCalculationType) {
+      case "cashback":
+        // For FIXED_WAGER, calculate cashback amount; for others, use cashbackAmount
+        if (cashbackType === "fixed_wager") {
+          // Estimate cashback: assume 10% loss for calculation (will be recalculated in backend)
+          const estimatedLoss = deposit * 0.1;
+          const estimatedCashback = Math.min(cashbackRate * estimatedLoss, cashbackCap);
+          return estimatedCashback * cashbackBonusWageringMultiplier;
+        } else {
+          return cashbackAmount * cashbackBonusWageringMultiplier;
+        }
+      case "fixed":
+        return cashbackBonusWageringMultiplier;
+      default:
+        return cashbackAmount * cashbackBonusWageringMultiplier;
+    }
+  };
+
+  // Calculate bonus game 2 switch balance
+  const calculateBonusGame2SwitchBalance = (): number => {
+    switch (bonusGame2SwitchBalanceCalculationType) {
+      case "deposit":
+        return deposit * bonusGame2SwitchBalanceMultiplier;
+      case "bonus":
+        return bonusAmount * bonusGame2SwitchBalanceMultiplier;
+      case "both":
+        return (deposit + bonusAmount) * bonusGame2SwitchBalanceMultiplier;
+      case "fixed":
+        return bonusGame2SwitchBalanceMultiplier;
+      default:
+        return bonusAmount * bonusGame2SwitchBalanceMultiplier;
     }
   };
 
@@ -684,6 +960,66 @@ export default function EVSimulatorPage() {
       setGame2SwitchBalance(calculated);
     }
   }, [switchBalanceCalculationType, switchBalanceMultiplier, deposit, bonusAmount, game2Enabled]);
+
+  // Auto-update bonus wagering requirement when calculation inputs change
+  useEffect(() => {
+    if (bonusType === "postwager") {
+      const calculated = calculateBonusWageringRequirement();
+      setBonusWageringRequirement(calculated);
+    }
+    if (bonusType === "cashback") {
+      const calculated = calculateCashbackBonusWageringRequirement();
+      setCashbackBonusWageringRequirement(calculated);
+    }
+  }, [bonusWageringCalculationType, bonusWageringMultiplier, deposit, bonusAmount, bonusType, cashbackBonusWageringCalculationType, cashbackBonusWageringMultiplier, cashbackType, cashbackRate, cashbackCap, cashbackAmount]);
+
+  // Auto-update bonus game 2 switch balance when calculation inputs change
+  useEffect(() => {
+    if (bonusGame2Enabled) {
+      let calculated: number;
+      switch (bonusGame2SwitchBalanceCalculationType) {
+        case "deposit":
+          calculated = deposit * bonusGame2SwitchBalanceMultiplier;
+          break;
+        case "bonus":
+          calculated = bonusAmount * bonusGame2SwitchBalanceMultiplier;
+          break;
+        case "both":
+          calculated = (deposit + bonusAmount) * bonusGame2SwitchBalanceMultiplier;
+          break;
+        case "fixed":
+          calculated = bonusGame2SwitchBalanceMultiplier;
+          break;
+        default:
+          calculated = bonusAmount * bonusGame2SwitchBalanceMultiplier;
+      }
+      setBonusGame2SwitchBalance(calculated);
+    }
+  }, [bonusGame2SwitchBalanceCalculationType, bonusGame2SwitchBalanceMultiplier, deposit, bonusAmount, bonusGame2Enabled]);
+
+  // Auto-update cashback bonus game 2 switch balance when calculation inputs change
+  useEffect(() => {
+    if (cashbackBonusGame2Enabled) {
+      let calculated: number;
+      switch (cashbackBonusGame2SwitchBalanceCalculationType) {
+        case "deposit":
+          calculated = deposit * cashbackBonusGame2SwitchBalanceMultiplier;
+          break;
+        case "bonus":
+          calculated = cashbackAmount * cashbackBonusGame2SwitchBalanceMultiplier;
+          break;
+        case "both":
+          calculated = (deposit + cashbackAmount) * cashbackBonusGame2SwitchBalanceMultiplier;
+          break;
+        case "fixed":
+          calculated = cashbackBonusGame2SwitchBalanceMultiplier;
+          break;
+        default:
+          calculated = cashbackAmount * cashbackBonusGame2SwitchBalanceMultiplier;
+      }
+      setCashbackBonusGame2SwitchBalance(calculated);
+    }
+  }, [cashbackBonusGame2SwitchBalanceCalculationType, cashbackBonusGame2SwitchBalanceMultiplier, deposit, cashbackAmount, cashbackBonusGame2Enabled]);
 
   // Set default type if empty when category is set
   useEffect(() => {
@@ -870,6 +1206,24 @@ export default function EVSimulatorPage() {
         }
       }
 
+      if (bonusType === "postwager") {
+        bonusConfig.apply_bonus_play = applyBonusPlay;
+        if (applyBonusPlay) {
+          // Always use direct bonus wagering requirement (multiplier option removed)
+          bonusConfig.use_bonus_wagering_multiplier = false;
+          bonusConfig.bonus_wagering_requirement = bonusWageringRequirement;
+        }
+      }
+
+      if (bonusType === "cashback") {
+        bonusConfig.apply_bonus_play = applyCashbackBonusPlay;
+        if (applyCashbackBonusPlay) {
+          // Always use direct bonus wagering requirement (multiplier option removed)
+          bonusConfig.use_bonus_wagering_multiplier = false;
+          bonusConfig.bonus_wagering_requirement = cashbackBonusWageringRequirement;
+        }
+      }
+
       // Construct game1 config
       const game1Config: GameConfig = {
         name: game1Name,
@@ -984,6 +1338,106 @@ export default function EVSimulatorPage() {
 
       if (postCoverplayConfig) {
         request.post_coverplay = postCoverplayConfig;
+      }
+
+      // Add bonus game configuration for Post-Wager (only if bonus play is enabled)
+      if (bonusType === "postwager" && applyBonusPlay) {
+        // Always include bonus_game1 config (if not configured, backend will use main game1)
+        const bonusGame1Config: GameConfig = {
+          name: bonusGame1Name,
+          bet_size: bonusGame1BetSize,
+          time_per_bet: bonusGame1TimePerBet,
+          game_weighting: bonusGame1Contribution,
+        };
+
+        if (bonusGame1Name === "slots" && bonusGame1Risk) {
+          bonusGame1Config.risk = bonusGame1Risk;
+        }
+
+        if (bonusGame1Name === "digits" && bonusGame1DigitsType) {
+          bonusGame1Config.digits_type = bonusGame1DigitsType;
+        }
+
+        if (bonusGame1HouseEdge !== null) {
+          bonusGame1Config.house_edge = bonusGame1HouseEdge;
+        }
+
+        request.bonus_game1 = bonusGame1Config;
+
+        // Construct bonus_game2 config if enabled
+        if (bonusGame2Enabled) {
+          const bonusGame2Config: GameConfig = {
+            name: bonusGame2Name,
+            bet_size: bonusGame2BetSize,
+            time_per_bet: bonusGame2TimePerBet,
+            game_weighting: bonusGame2Contribution,
+            switch_balance: bonusGame2SwitchBalance,
+          };
+
+          if (bonusGame2Name === "slots" && bonusGame2Risk) {
+            bonusGame2Config.risk = bonusGame2Risk;
+          }
+
+          if (bonusGame2Name === "digits" && bonusGame2DigitsType) {
+            bonusGame2Config.digits_type = bonusGame2DigitsType;
+          }
+
+          if (bonusGame2HouseEdge !== null) {
+            bonusGame2Config.house_edge = bonusGame2HouseEdge;
+          }
+
+          request.bonus_game2 = bonusGame2Config;
+        }
+      }
+
+      // Add bonus game configuration for Cashback (only if bonus play is enabled)
+      if (bonusType === "cashback" && applyCashbackBonusPlay) {
+        // Always include bonus_game1 config (if not configured, backend will use main game1)
+        const cashbackBonusGame1Config: GameConfig = {
+          name: cashbackBonusGame1Name,
+          bet_size: cashbackBonusGame1BetSize,
+          time_per_bet: cashbackBonusGame1TimePerBet,
+          game_weighting: cashbackBonusGame1Contribution,
+        };
+
+        if (cashbackBonusGame1Name === "slots" && cashbackBonusGame1Risk) {
+          cashbackBonusGame1Config.risk = cashbackBonusGame1Risk;
+        }
+
+        if (cashbackBonusGame1Name === "digits" && cashbackBonusGame1DigitsType) {
+          cashbackBonusGame1Config.digits_type = cashbackBonusGame1DigitsType;
+        }
+
+        if (cashbackBonusGame1HouseEdge !== null) {
+          cashbackBonusGame1Config.house_edge = cashbackBonusGame1HouseEdge;
+        }
+
+        request.bonus_game1 = cashbackBonusGame1Config;
+
+        // Construct bonus_game2 config if enabled
+        if (cashbackBonusGame2Enabled) {
+          const cashbackBonusGame2Config: GameConfig = {
+            name: cashbackBonusGame2Name,
+            bet_size: cashbackBonusGame2BetSize,
+            time_per_bet: cashbackBonusGame2TimePerBet,
+            game_weighting: cashbackBonusGame2Contribution,
+            switch_balance: cashbackBonusGame2SwitchBalance,
+          };
+
+          if (cashbackBonusGame2Name === "slots" && cashbackBonusGame2Risk) {
+            cashbackBonusGame2Config.risk = cashbackBonusGame2Risk;
+          }
+
+          if (cashbackBonusGame2Name === "digits" && cashbackBonusGame2DigitsType) {
+            cashbackBonusGame2Config.digits_type = cashbackBonusGame2DigitsType;
+          }
+
+          if (cashbackBonusGame2HouseEdge !== null) {
+            cashbackBonusGame2Config.house_edge = cashbackBonusGame2HouseEdge;
+          }
+
+          request.bonus_game2 = cashbackBonusGame2Config;
+        }
       }
 
       // Make API call
@@ -1140,6 +1594,7 @@ export default function EVSimulatorPage() {
                     />
                   </div>
                 )}
+
               </>
             )}
 
@@ -1208,30 +1663,6 @@ export default function EVSimulatorPage() {
                       placeholder="50"
                     />
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="cashbackAsBonus"
-                      checked={cashbackAsBonus}
-                      onCheckedChange={(checked) => setCashbackAsBonus(checked as boolean)}
-                    />
-                    <Label htmlFor="cashbackAsBonus" className="font-normal cursor-pointer">
-                      Cashback as Bonus (requires wagering)
-                    </Label>
-                  </div>
-                  {cashbackAsBonus && (
-                    <div className="space-y-2">
-                      <Label htmlFor="cashbackWageringRequirement">
-                        Cashback Wagering Requirement ($)
-                      </Label>
-                      <Input
-                        id="cashbackWageringRequirement"
-                        type="number"
-                        value={cashbackWageringRequirement}
-                        onChange={(e) => setCashbackWageringRequirement(Number(e.target.value))}
-                        placeholder="0"
-                      />
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1328,16 +1759,17 @@ export default function EVSimulatorPage() {
         </CardContent>
       </Card>
 
-      {/* GAME CONFIGURATIONS - SIDE BY SIDE */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* GAME 1 CONFIGURATION */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Game 1</CardTitle>
-          </CardHeader>
+      {/* CASH PLAY CONFIGURATION */}
+      <div className="mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* GAME 1 CONFIGURATION */}
+          <Card className={(bonusType === "postwager" || bonusType === "cashback") ? "lg:col-span-2" : ""}>
+            <CardHeader>
+              <CardTitle>{(bonusType === "postwager" || bonusType === "cashback") ? "Game 1 (Cash Play)" : "Game 1"}</CardTitle>
+            </CardHeader>
           <CardContent className="space-y-4">
-            {/* Line 1: Game and Game Type */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Line 1: Game Type, Selection, Bet Size, and Time Per Bet (4 columns for Post-Wager and Cashback, 2 columns for others) */}
+            <div className={`grid gap-4 ${(bonusType === "postwager" || bonusType === "cashback") ? "grid-cols-4" : "grid-cols-2"}`}>
               <div className="space-y-2">
                 <Label htmlFor="game1Category">Game Type</Label>
                 <Select value={game1Category} onValueChange={(v) => {
@@ -1441,277 +1873,90 @@ export default function EVSimulatorPage() {
                   </Select>
                 )}
               </div>
-            </div>
 
-            {/* Line 2: Bet Size and Time Per Bet */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="game1BetSize">Bet Size ($)</Label>
-                <Input
-                  id="game1BetSize"
-                  type="number"
-                  step="0.01"
-                  value={game1BetSize}
-                  onChange={(e) => setGame1BetSize(Number(e.target.value))}
-                  placeholder="5.0"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="game1TimePerBet">Time Per Bet (seconds)</Label>
-                <Input
-                  id="game1TimePerBet"
-                  type="number"
-                  step="0.1"
-                  value={game1TimePerBet}
-                  onChange={(e) => setGame1TimePerBet(Number(e.target.value))}
-                  placeholder="3.0"
-                />
-              </div>
-            </div>
-
-            {/* Line 3: Game Weighting and House Edge */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="game1Weighting">Game Weighting (%)</Label>
-                <Input
-                  id="game1Weighting"
-                  type="number"
-                  step="0.1"
-                  value={game1Weighting}
-                  onChange={(e) => setGame1Weighting(Number(e.target.value))}
-                  placeholder="100.0"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="relative">
-                  <Label htmlFor="game1HouseEdge">House Edge (%)</Label>
-                  <button
-                    type="button"
-                    onClick={() => setGame1HouseEdgeLocked(!game1HouseEdgeLocked)}
-                    className="absolute top-0 right-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {game1HouseEdgeLocked ? (
-                      <>
-                        <Lock className="h-3 w-3" />
-                        <span>Edit</span>
-                      </>
-                    ) : (
-                      <>
-                        <Unlock className="h-3 w-3" />
-                        <span>Edit</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-                <Input
-                  id="game1HouseEdge"
-                  type="number"
-                  step="0.01"
-                  disabled={game1HouseEdgeLocked}
-                  value={game1HouseEdge !== null ? game1HouseEdge : (getDefaultHouseEdge(game1Name) ?? "")}
-                  onChange={(e) => setGame1HouseEdge(e.target.value ? Number(e.target.value) : null)}
-                  placeholder={getDefaultHouseEdge(game1Name) !== null ? "" : "Variable"}
-                  className={game1HouseEdgeLocked ? "bg-muted cursor-not-allowed" : ""}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {getDefaultHouseEdge(game1Name) !== null 
-                    ? `Default value (${getDefaultHouseEdge(game1Name)}%)`
-                    : "Variable based on threshold"}
-                </p>
-              </div>
-            </div>
-
-
-        </CardContent>
-      </Card>
-
-      {/* GAME 2 CONFIGURATION */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Game 2</CardTitle>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="game2Enabled"
-                checked={game2Enabled}
-                disabled={bonusType !== "cashable" && bonusType !== "postwager" && bonusType !== "cashback"}
-                onCheckedChange={(checked) => setGame2Enabled(checked as boolean)}
-              />
-              <Label 
-                htmlFor="game2Enabled" 
-                className={`font-normal ${bonusType !== "cashable" && bonusType !== "postwager" && bonusType !== "cashback" ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer"}`}
-              >
-                Enable Two-Tier Strategy
-                {bonusType !== "cashable" && bonusType !== "postwager" && bonusType !== "cashback" && (
-                  <span className="text-xs block text-muted-foreground mt-1">
-                    (Only available with Deposit Bonuses, Post-Wager, or Cashback)
-                  </span>
-                )}
-              </Label>
-            </div>
-          </div>
-        </CardHeader>
-        {game2Enabled ? (
-            <CardContent className="space-y-4">
-              {/* Line 1: Game and Game Type */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="game2Category">Game Type</Label>
-                  <Select value={game2Category} onValueChange={(v) => {
-                    const newCategory = v as GameCategory;
-                    setGame2Category(newCategory);
-                    const defaultType = getDefaultGameType(newCategory);
-                    if (newCategory === "slots") {
-                      setGame2Risk(defaultType as RiskLevel);
-                    } else if (newCategory === "digits") {
-                      setGame2Type(defaultType);
-                      setGame2DigitsType(defaultType);
-                    } else {
-                      setGame2Type(defaultType);
-                    }
-                  }}>
-                    <SelectTrigger id="game2Category">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="european_roulette">European Roulette</SelectItem>
-                      <SelectItem value="american_roulette">American Roulette</SelectItem>
-                      <SelectItem value="french_roulette">French Roulette</SelectItem>
-                      <SelectItem value="baccarat">Baccarat</SelectItem>
-                      <SelectItem value="blackjack">Blackjack</SelectItem>
-                      <SelectItem value="slots">Slots</SelectItem>
-                      <SelectItem value="digits">Digits</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="game2Type">
-                    {game2Category === "slots" ? "Risk Level" : "Selection"}
-                  </Label>
-                  {(game2Category === "european_roulette" || game2Category === "american_roulette" || game2Category === "french_roulette") && (
-                    <Select value={game2Type} onValueChange={setGame2Type}>
-                      <SelectTrigger id="game2Type">
-                        <SelectValue placeholder="Select bet type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1s">1s</SelectItem>
-                        <SelectItem value="2s">2s</SelectItem>
-                        <SelectItem value="3s">3s</SelectItem>
-                        <SelectItem value="4s">4s</SelectItem>
-                        <SelectItem value="6s">6s</SelectItem>
-                        <SelectItem value="12s">12s</SelectItem>
-                        <SelectItem value="18s">18s</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                  {game2Category === "baccarat" && (
-                    <Select value={game2Type} onValueChange={setGame2Type}>
-                      <SelectTrigger id="game2Type">
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Player">Player</SelectItem>
-                        <SelectItem value="Banker">Banker</SelectItem>
-                        <SelectItem value="Tie">Tie</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                  {game2Category === "blackjack" && (
+              {/* Bet Size and Time Per Bet - shown inline for Post-Wager and Cashback */}
+              {(bonusType === "postwager" || bonusType === "cashback") && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="game1BetSize">Bet Size ($)</Label>
                     <Input
-                      id="game2Type"
-                      value=""
-                      disabled
-                      placeholder="No types available"
-                      className="bg-muted"
+                      id="game1BetSize"
+                      type="number"
+                      step="0.01"
+                      value={game1BetSize}
+                      onChange={(e) => setGame1BetSize(Number(e.target.value))}
+                      placeholder="5.0"
                     />
-                  )}
-                  {game2Category === "slots" && (
-                    <Select
-                      value={game2Risk || "medium"}
-                      onValueChange={(v) => setGame2Risk(v as RiskLevel)}
-                    >
-                      <SelectTrigger id="game2Risk">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="very_low">Very Low (0.25x)</SelectItem>
-                        <SelectItem value="low">Low (0.5x)</SelectItem>
-                        <SelectItem value="medium">Medium (1.0x)</SelectItem>
-                        <SelectItem value="high">High (2.0x)</SelectItem>
-                        <SelectItem value="very_high">Very High (4.0x)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                  {game2Category === "digits" && (
-                    <Select value={game2Type} onValueChange={setGame2Type}>
-                      <SelectTrigger id="game2Type">
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {digitsOptions.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-              </div>
+                  </div>
 
-              {/* Line 2: Bet Size and Time Per Bet */}
+                  <div className="space-y-2">
+                    <Label htmlFor="game1TimePerBet">Time Per Bet (seconds)</Label>
+                    <Input
+                      id="game1TimePerBet"
+                      type="number"
+                      step="0.1"
+                      value={game1TimePerBet}
+                      onChange={(e) => setGame1TimePerBet(Number(e.target.value))}
+                      placeholder="3.0"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Line 2: Bet Size and Time Per Bet (only for non-Post-Wager and non-Cashback) */}
+            {bonusType !== "postwager" && bonusType !== "cashback" && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="game2BetSize">Bet Size ($)</Label>
+                  <Label htmlFor="game1BetSize">Bet Size ($)</Label>
                   <Input
-                    id="game2BetSize"
+                    id="game1BetSize"
                     type="number"
                     step="0.01"
-                    value={game2BetSize}
-                    onChange={(e) => setGame2BetSize(Number(e.target.value))}
-                    placeholder="2.0"
+                    value={game1BetSize}
+                    onChange={(e) => setGame1BetSize(Number(e.target.value))}
+                    placeholder="5.0"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="game2TimePerBet">Time Per Bet (seconds)</Label>
+                  <Label htmlFor="game1TimePerBet">Time Per Bet (seconds)</Label>
                   <Input
-                    id="game2TimePerBet"
+                    id="game1TimePerBet"
                     type="number"
                     step="0.1"
-                    value={game2TimePerBet}
-                    onChange={(e) => setGame2TimePerBet(Number(e.target.value))}
+                    value={game1TimePerBet}
+                    onChange={(e) => setGame1TimePerBet(Number(e.target.value))}
                     placeholder="3.0"
                   />
                 </div>
               </div>
+            )}
 
-              {/* Line 3: Game Weighting and House Edge */}
-              <div className="grid grid-cols-2 gap-4">
+            {/* Line 3: Game Weighting and House Edge */}
+            <div className="flex justify-start items-start">
+              <div className={`grid grid-cols-2 gap-4 ${(bonusType === "postwager" || bonusType === "cashback") ? "w-1/2" : "w-full"}`}>
                 <div className="space-y-2">
-                  <Label htmlFor="game2Weighting">Game Weighting (%)</Label>
+                  <Label htmlFor="game1Weighting">Game Weighting (%)</Label>
                   <Input
-                    id="game2Weighting"
+                    id="game1Weighting"
                     type="number"
                     step="0.1"
-                    value={game2Weighting}
-                    onChange={(e) => setGame2Weighting(Number(e.target.value))}
+                    value={game1Weighting}
+                    onChange={(e) => setGame1Weighting(Number(e.target.value))}
                     placeholder="100.0"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <div className="relative">
-                    <Label htmlFor="game2HouseEdge">House Edge (%)</Label>
+                    <Label htmlFor="game1HouseEdge">House Edge (%)</Label>
                     <button
                       type="button"
-                      onClick={() => setGame2HouseEdgeLocked(!game2HouseEdgeLocked)}
+                      onClick={() => setGame1HouseEdgeLocked(!game1HouseEdgeLocked)}
                       className="absolute top-0 right-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      {game2HouseEdgeLocked ? (
+                      {game1HouseEdgeLocked ? (
                         <>
                           <Lock className="h-3 w-3" />
                           <span>Edit</span>
@@ -1725,80 +1970,1384 @@ export default function EVSimulatorPage() {
                     </button>
                   </div>
                   <Input
-                    id="game2HouseEdge"
+                    id="game1HouseEdge"
                     type="number"
                     step="0.01"
-                    disabled={game2HouseEdgeLocked}
-                    value={game2HouseEdge !== null ? game2HouseEdge : (getDefaultHouseEdge(game2Name) ?? "")}
-                    onChange={(e) => setGame2HouseEdge(e.target.value ? Number(e.target.value) : null)}
-                    placeholder={getDefaultHouseEdge(game2Name) !== null ? "" : "Variable"}
-                    className={game2HouseEdgeLocked ? "bg-muted cursor-not-allowed" : ""}
+                    disabled={game1HouseEdgeLocked}
+                    value={game1HouseEdge !== null ? game1HouseEdge : (getDefaultHouseEdge(game1Name) ?? "")}
+                    onChange={(e) => setGame1HouseEdge(e.target.value ? Number(e.target.value) : null)}
+                    placeholder={getDefaultHouseEdge(game1Name) !== null ? "" : "Variable"}
+                    className={game1HouseEdgeLocked ? "bg-muted cursor-not-allowed" : ""}
                   />
                   <p className="text-xs text-muted-foreground">
-                    {getDefaultHouseEdge(game2Name) !== null 
-                      ? `Default value (${getDefaultHouseEdge(game2Name)}%)`
+                    {getDefaultHouseEdge(game1Name) !== null 
+                      ? `Default value (${getDefaultHouseEdge(game1Name)}%)`
                       : "Variable based on threshold"}
                   </p>
                 </div>
               </div>
 
-              {/* Switch Balance - Only shown when Game 2 is enabled */}
-              <div className="space-y-2 pt-4 border-t">
-                <div className="flex items-start gap-2 flex-wrap grid grid-cols-2">
-                  <div className="flex items-center gap-2 py-2">
-                    <span className="text-xl font-semibold text-green-600 dark:text-green-400 whitespace-nowrap">Switch Balance ($) :</span>
-                      <span className="text-xl font-semibold text-green-600 dark:text-green-400">{calculateSwitchBalance().toLocaleString()}  </span>
+              {/* Bonus Wagering Requirement (only for Post-Wager) */}
+              {bonusType === "postwager" && (
+                <div className="ml-6 w-1/2">
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="applyBonusPlay"
+                        checked={applyBonusPlay}
+                        onCheckedChange={(checked) => setApplyBonusPlay(checked === true)}
+                      />
+                      <Label htmlFor="applyBonusPlay" className="text-sm font-medium">
+                        Apply Bonus Play
+                      </Label>
+                    </div>
+                    {applyBonusPlay && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl font-semibold text-red-600 dark:text-red-400 whitespace-nowrap">Bonus Wagering ($):</span>
+                          <span className="text-xl font-semibold text-red-600 dark:text-red-400">
+                            {(() => {
+                              const value = calculateBonusWageringRequirement();
+                              return Number.isInteger(value) ? value.toString() : value.toFixed(2);
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={bonusWageringCalculationType}
+                            onValueChange={(v) => setBonusWageringCalculationType(v as "bonus" | "fixed")}
+                          >
+                            <SelectTrigger className="w-[120px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="bonus">Bonus</SelectItem>
+                              <SelectItem value="fixed">Fixed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <span className="text-lg">✕</span>
+                          <Input
+                            id="bonusWageringMultiplier"
+                            type="number"
+                            step="1"
+                            min="1"
+                            value={bonusWageringMultiplier}
+                            onChange={(e) => {
+                              const value = Number(e.target.value);
+                              if (value > 99999) {
+                                return;
+                              }
+                              if (value > 0) {
+                                setBonusWageringMultiplier(value);
+                              }
+                            }}
+                            className="w-[120px]"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 ">
-                    <Select
-                      value={switchBalanceCalculationType}
-                      onValueChange={(value) => setSwitchBalanceCalculationType(value as "deposit" | "bonus" | "both" | "fixed")}
+                </div>
+              )}
+
+              {/* Bonus Wagering Requirement (only for Cashback) */}
+              {bonusType === "cashback" && (
+                <div className="ml-6 w-1/2">
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="applyCashbackBonusPlay"
+                        checked={applyCashbackBonusPlay}
+                        onCheckedChange={(checked) => setApplyCashbackBonusPlay(checked === true)}
+                      />
+                      <Label htmlFor="applyCashbackBonusPlay" className="text-sm font-medium">
+                        Apply Bonus Play
+                      </Label>
+                    </div>
+                    {applyCashbackBonusPlay && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl font-semibold text-red-600 dark:text-red-400 whitespace-nowrap">Bonus Wagering ($):</span>
+                          <span className="text-xl font-semibold text-red-600 dark:text-red-400">
+                            {(() => {
+                              const value = calculateCashbackBonusWageringRequirement();
+                              return Number.isInteger(value) ? value.toString() : value.toFixed(2);
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={cashbackBonusWageringCalculationType}
+                            onValueChange={(v) => setCashbackBonusWageringCalculationType(v as "cashback" | "fixed")}
+                          >
+                            <SelectTrigger className="w-[120px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="cashback">Cashback</SelectItem>
+                              <SelectItem value="fixed">Fixed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <span className="text-lg">✕</span>
+                          <Input
+                            id="cashbackBonusWageringMultiplier"
+                            type="number"
+                            step="1"
+                            min="1"
+                            value={cashbackBonusWageringMultiplier}
+                            onChange={(e) => {
+                              const value = Number(e.target.value);
+                              if (value > 99999) {
+                                return;
+                              }
+                              if (value > 0) {
+                                setCashbackBonusWageringMultiplier(value);
+                              }
+                            }}
+                            className="w-[120px]"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+
+        </CardContent>
+      </Card>
+
+          {/* GAME 2 CONFIGURATION - Only for non-Post-Wager and non-Cashback bonus types */}
+          {bonusType !== "postwager" && bonusType !== "cashback" && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Game 2</CardTitle>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="game2Enabled"
+                      checked={game2Enabled}
+                      disabled={bonusType !== "cashable"}
+                      onCheckedChange={(checked) => setGame2Enabled(checked as boolean)}
+                    />
+                    <Label 
+                      htmlFor="game2Enabled" 
+                      className={`font-normal ${bonusType !== "cashable" ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer"}`}
                     >
-                      <SelectTrigger className="w-[120px]">
+                      Enable Two-Tier Strategy
+                      {bonusType !== "cashable" && (
+                        <span className="text-xs block text-muted-foreground mt-1">
+                          (Only available with Deposit Bonuses)
+                        </span>
+                      )}
+                    </Label>
+                  </div>
+                </div>
+              </CardHeader>
+              {game2Enabled ? (
+                <CardContent className="space-y-4">
+                  {/* Line 1: Game and Game Type */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="game2Category">Game Type</Label>
+                      <Select value={game2Category} onValueChange={(v) => {
+                        const newCategory = v as GameCategory;
+                        setGame2Category(newCategory);
+                        const defaultType = getDefaultGameType(newCategory);
+                        if (newCategory === "slots") {
+                          setGame2Risk(defaultType as RiskLevel);
+                        } else if (newCategory === "digits") {
+                          setGame2Type(defaultType);
+                          setGame2DigitsType(defaultType);
+                        } else {
+                          setGame2Type(defaultType);
+                        }
+                      }}>
+                        <SelectTrigger id="game2Category">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="european_roulette">European Roulette</SelectItem>
+                          <SelectItem value="american_roulette">American Roulette</SelectItem>
+                          <SelectItem value="french_roulette">French Roulette</SelectItem>
+                          <SelectItem value="baccarat">Baccarat</SelectItem>
+                          <SelectItem value="blackjack">Blackjack</SelectItem>
+                          <SelectItem value="slots">Slots</SelectItem>
+                          <SelectItem value="digits">Digits</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="game2Type">
+                        {game2Category === "slots" ? "Risk Level" : "Selection"}
+                      </Label>
+                      {(game2Category === "european_roulette" || game2Category === "american_roulette" || game2Category === "french_roulette") && (
+                        <Select value={game2Type} onValueChange={setGame2Type}>
+                          <SelectTrigger id="game2Type">
+                            <SelectValue placeholder="Select bet type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1s">1s</SelectItem>
+                            <SelectItem value="2s">2s</SelectItem>
+                            <SelectItem value="3s">3s</SelectItem>
+                            <SelectItem value="4s">4s</SelectItem>
+                            <SelectItem value="6s">6s</SelectItem>
+                            <SelectItem value="12s">12s</SelectItem>
+                            <SelectItem value="18s">18s</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {game2Category === "baccarat" && (
+                        <Select value={game2Type} onValueChange={setGame2Type}>
+                          <SelectTrigger id="game2Type">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Player">Player</SelectItem>
+                            <SelectItem value="Banker">Banker</SelectItem>
+                            <SelectItem value="Tie">Tie</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {game2Category === "blackjack" && (
+                        <Input
+                          id="game2Type"
+                          value=""
+                          disabled
+                          placeholder="No types available"
+                          className="bg-muted"
+                        />
+                      )}
+                      {game2Category === "slots" && (
+                        <Select
+                          value={game2Risk || "medium"}
+                          onValueChange={(v) => setGame2Risk(v as RiskLevel)}
+                        >
+                          <SelectTrigger id="game2Risk">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="very_low">Very Low (0.25x)</SelectItem>
+                            <SelectItem value="low">Low (0.5x)</SelectItem>
+                            <SelectItem value="medium">Medium (1.0x)</SelectItem>
+                            <SelectItem value="high">High (2.0x)</SelectItem>
+                            <SelectItem value="very_high">Very High (4.0x)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {game2Category === "digits" && (
+                        <Select value={game2Type} onValueChange={setGame2Type}>
+                          <SelectTrigger id="game2Type">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {digitsOptions.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Line 2: Bet Size and Time Per Bet */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="game2BetSize">Bet Size ($)</Label>
+                      <Input
+                        id="game2BetSize"
+                        type="number"
+                        step="0.01"
+                        value={game2BetSize}
+                        onChange={(e) => setGame2BetSize(Number(e.target.value))}
+                        placeholder="2.0"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="game2TimePerBet">Time Per Bet (seconds)</Label>
+                      <Input
+                        id="game2TimePerBet"
+                        type="number"
+                        step="0.1"
+                        value={game2TimePerBet}
+                        onChange={(e) => setGame2TimePerBet(Number(e.target.value))}
+                        placeholder="3.0"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Line 3: Game Weighting and House Edge */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="game2Weighting">Game Weighting (%)</Label>
+                      <Input
+                        id="game2Weighting"
+                        type="number"
+                        step="0.1"
+                        value={game2Weighting}
+                        onChange={(e) => setGame2Weighting(Number(e.target.value))}
+                        placeholder="100.0"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Label htmlFor="game2HouseEdge">House Edge (%)</Label>
+                        <button
+                          type="button"
+                          onClick={() => setGame2HouseEdgeLocked(!game2HouseEdgeLocked)}
+                          className="absolute top-0 right-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {game2HouseEdgeLocked ? (
+                            <>
+                              <Lock className="h-3 w-3" />
+                              <span>Edit</span>
+                            </>
+                          ) : (
+                            <>
+                              <Unlock className="h-3 w-3" />
+                              <span>Edit</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <Input
+                        id="game2HouseEdge"
+                        type="number"
+                        step="0.01"
+                        disabled={game2HouseEdgeLocked}
+                        value={game2HouseEdge !== null ? game2HouseEdge : (getDefaultHouseEdge(game2Name) ?? "")}
+                        onChange={(e) => setGame2HouseEdge(e.target.value ? Number(e.target.value) : null)}
+                        placeholder={getDefaultHouseEdge(game2Name) !== null ? "" : "Variable"}
+                        className={game2HouseEdgeLocked ? "bg-muted cursor-not-allowed" : ""}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {getDefaultHouseEdge(game2Name) !== null 
+                          ? `Default value (${getDefaultHouseEdge(game2Name)}%)`
+                          : "Variable based on threshold"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Switch Balance */}
+                  <div className="space-y-2 pt-4 border-t">
+                    <div className="grid grid-cols-2 gap-4 items-center">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl font-semibold text-red-600 dark:text-red-400 whitespace-nowrap">Switch Balance ($):</span>
+                        <span className="text-xl font-semibold text-red-600 dark:text-red-400">
+                          {(() => {
+                            const value = calculateSwitchBalance();
+                            return Number.isInteger(value) ? value.toString() : value.toFixed(2);
+                          })()}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={switchBalanceCalculationType}
+                          onValueChange={(v) => setSwitchBalanceCalculationType(v as "deposit" | "bonus" | "both" | "fixed")}
+                        >
+                          <SelectTrigger className="w-[120px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="deposit">Deposit</SelectItem>
+                            <SelectItem value="bonus">Bonus</SelectItem>
+                            <SelectItem value="both">Both</SelectItem>
+                            <SelectItem value="fixed">Fixed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <span className="text-lg">✕</span>
+                        <Input
+                          id="switchBalanceMultiplier"
+                          type="number"
+                          step="1"
+                          min="1"
+                          value={switchBalanceMultiplier}
+                          onChange={(e) => {
+                            const value = Number(e.target.value);
+                            if (value > 99999) {
+                              return;
+                            }
+                            if (value > 0) {
+                              setSwitchBalanceMultiplier(value);
+                            }
+                          }}
+                          className="w-[120px]"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Balance threshold to switch from Game 1 to Game 2
+                    </p>
+                  </div>
+                </CardContent>
+              ) : (
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Enable two-tier strategy to switch from Game 1 to Game 2 at a specific balance threshold.
+                  </p>
+                </CardContent>
+              )}
+            </Card>
+          )}
+        </div>
+      </div>
+
+      {/* BONUS PLAY CONFIGURATION (Only for Post-Wager) */}
+      {bonusType === "postwager" && applyBonusPlay && (
+        <div className="mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* GAME 1 BONUS CONFIGURATION */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Game 1 Bonus (Bonus Play)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Line 1: Game and Game Type */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bonusGame1Category">Game Type</Label>
+                    <Select value={bonusGame1Category} onValueChange={(v) => {
+                      const newCategory = v as GameCategory;
+                      setBonusGame1Category(newCategory);
+                      const defaultType = getDefaultGameType(newCategory);
+                      if (newCategory === "slots") {
+                        setBonusGame1Risk(defaultType as RiskLevel);
+                      } else if (newCategory === "digits") {
+                        setBonusGame1Type(defaultType);
+                        setBonusGame1DigitsType(defaultType);
+                      } else {
+                        setBonusGame1Type(defaultType);
+                      }
+                    }}>
+                      <SelectTrigger id="bonusGame1Category">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="deposit">Deposit</SelectItem>
-                        <SelectItem value="bonus">Bonus</SelectItem>
-                        <SelectItem value="both">Both</SelectItem>
-                        <SelectItem value="fixed">Fixed</SelectItem>
+                        <SelectItem value="european_roulette">European Roulette</SelectItem>
+                        <SelectItem value="american_roulette">American Roulette</SelectItem>
+                        <SelectItem value="french_roulette">French Roulette</SelectItem>
+                        <SelectItem value="baccarat">Baccarat</SelectItem>
+                        <SelectItem value="blackjack">Blackjack</SelectItem>
+                        <SelectItem value="slots">Slots</SelectItem>
+                        <SelectItem value="digits">Digits</SelectItem>
                       </SelectContent>
                     </Select>
-                    <span className="text-lg">✕</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bonusGame1Type">
+                      {bonusGame1Category === "slots" ? "Risk Level" : "Selection"}
+                    </Label>
+                    {(bonusGame1Category === "european_roulette" || bonusGame1Category === "american_roulette" || bonusGame1Category === "french_roulette") && (
+                      <Select value={bonusGame1Type} onValueChange={setBonusGame1Type}>
+                        <SelectTrigger id="bonusGame1Type">
+                          <SelectValue placeholder="Select bet type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1s">1s</SelectItem>
+                          <SelectItem value="2s">2s</SelectItem>
+                          <SelectItem value="3s">3s</SelectItem>
+                          <SelectItem value="4s">4s</SelectItem>
+                          <SelectItem value="6s">6s</SelectItem>
+                          <SelectItem value="12s">12s</SelectItem>
+                          <SelectItem value="18s">18s</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {bonusGame1Category === "baccarat" && (
+                      <Select value={bonusGame1Type} onValueChange={setBonusGame1Type}>
+                        <SelectTrigger id="bonusGame1Type">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Player">Player</SelectItem>
+                          <SelectItem value="Banker">Banker</SelectItem>
+                          <SelectItem value="Tie">Tie</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {bonusGame1Category === "blackjack" && (
+                      <Input
+                        id="bonusGame1Type"
+                        value=""
+                        disabled
+                        placeholder="No types available"
+                        className="bg-muted"
+                      />
+                    )}
+                    {bonusGame1Category === "slots" && (
+                      <Select
+                        value={bonusGame1Risk || "medium"}
+                        onValueChange={(v) => setBonusGame1Risk(v as RiskLevel)}
+                      >
+                        <SelectTrigger id="bonusGame1Risk">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="very_low">Very Low (0.25x)</SelectItem>
+                          <SelectItem value="low">Low (0.5x)</SelectItem>
+                          <SelectItem value="medium">Medium (1.0x)</SelectItem>
+                          <SelectItem value="high">High (2.0x)</SelectItem>
+                          <SelectItem value="very_high">Very High (4.0x)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {bonusGame1Category === "digits" && (
+                      <Select value={bonusGame1Type} onValueChange={setBonusGame1Type}>
+                        <SelectTrigger id="bonusGame1Type">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {digitsOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                </div>
+
+                {/* Line 2: Bet Size and Time Per Bet */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bonusGame1BetSize">Bet Size ($)</Label>
                     <Input
-                      id="switchBalanceMultiplier"
+                      id="bonusGame1BetSize"
                       type="number"
-                      step="1"
-                      min="1"
-                      value={switchBalanceMultiplier}
-                      onChange={(e) => {
-                        const value = Number(e.target.value);
-                        if (value > 99999) {
-                          return;
-                        }
-                        if (value > 0) {
-                          setSwitchBalanceMultiplier(value);
-                        }
-                      }}
-                      className="w-[120px]"
+                      step="0.01"
+                      value={bonusGame1BetSize}
+                      onChange={(e) => setBonusGame1BetSize(Number(e.target.value))}
+                      placeholder="5.0"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bonusGame1TimePerBet">Time Per Bet (seconds)</Label>
+                    <Input
+                      id="bonusGame1TimePerBet"
+                      type="number"
+                      step="0.1"
+                      value={bonusGame1TimePerBet}
+                      onChange={(e) => setBonusGame1TimePerBet(Number(e.target.value))}
+                      placeholder="3.0"
                     />
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Balance threshold to switch from Game 1 to Game 2
-                </p>
-              </div>
 
-            </CardContent>
-          ) : (
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Enable two-tier strategy to switch from Game 1 to Game 2 at a specific balance threshold.
-              </p>
-            </CardContent>
-          )}
-        </Card>
-      </div>
+                {/* Line 3: Game Weighting and House Edge */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bonusGame1Contribution">Game Weighting (%)</Label>
+                    <Input
+                      id="bonusGame1Contribution"
+                      type="number"
+                      step="0.1"
+                      value={bonusGame1Contribution}
+                      onChange={(e) => setBonusGame1Contribution(Number(e.target.value))}
+                      placeholder="100.0"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Label htmlFor="bonusGame1HouseEdge">House Edge (%)</Label>
+                      <button
+                        type="button"
+                        onClick={() => setBonusGame1HouseEdgeLocked(!bonusGame1HouseEdgeLocked)}
+                        className="absolute top-0 right-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {bonusGame1HouseEdgeLocked ? (
+                          <>
+                            <Lock className="h-3 w-3" />
+                            <span>Edit</span>
+                          </>
+                        ) : (
+                          <>
+                            <Unlock className="h-3 w-3" />
+                            <span>Edit</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <Input
+                      id="bonusGame1HouseEdge"
+                      type="number"
+                      step="0.01"
+                      disabled={bonusGame1HouseEdgeLocked}
+                      value={bonusGame1HouseEdge !== null ? bonusGame1HouseEdge : (getDefaultHouseEdge(bonusGame1Name) ?? "")}
+                      onChange={(e) => setBonusGame1HouseEdge(e.target.value ? Number(e.target.value) : null)}
+                      placeholder={getDefaultHouseEdge(bonusGame1Name) !== null ? "" : "Variable"}
+                      className={bonusGame1HouseEdgeLocked ? "bg-muted cursor-not-allowed" : ""}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {getDefaultHouseEdge(bonusGame1Name) !== null 
+                        ? `Default value (${getDefaultHouseEdge(bonusGame1Name)}%)`
+                        : "Variable based on threshold"}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* GAME 2 BONUS CONFIGURATION */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Game 2 Bonus (Bonus Play)</CardTitle>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="bonusGame2Enabled"
+                      checked={bonusGame2Enabled}
+                      onCheckedChange={(checked) => setBonusGame2Enabled(checked as boolean)}
+                    />
+                    <Label htmlFor="bonusGame2Enabled" className="font-normal cursor-pointer">
+                      Enable Two-Tier Strategy
+                    </Label>
+                  </div>
+                </div>
+              </CardHeader>
+              {bonusGame2Enabled ? (
+                <CardContent className="space-y-4">
+                  {/* Line 1: Game and Game Type */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="bonusGame2Category">Game Type</Label>
+                      <Select value={bonusGame2Category} onValueChange={(v) => {
+                        const newCategory = v as GameCategory;
+                        setBonusGame2Category(newCategory);
+                        const defaultType = getDefaultGameType(newCategory);
+                        if (newCategory === "slots") {
+                          setBonusGame2Risk(defaultType as RiskLevel);
+                        } else if (newCategory === "digits") {
+                          setBonusGame2Type(defaultType);
+                          setBonusGame2DigitsType(defaultType);
+                        } else {
+                          setBonusGame2Type(defaultType);
+                        }
+                      }}>
+                        <SelectTrigger id="bonusGame2Category">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="european_roulette">European Roulette</SelectItem>
+                          <SelectItem value="american_roulette">American Roulette</SelectItem>
+                          <SelectItem value="french_roulette">French Roulette</SelectItem>
+                          <SelectItem value="baccarat">Baccarat</SelectItem>
+                          <SelectItem value="blackjack">Blackjack</SelectItem>
+                          <SelectItem value="slots">Slots</SelectItem>
+                          <SelectItem value="digits">Digits</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bonusGame2Type">
+                        {bonusGame2Category === "slots" ? "Risk Level" : "Selection"}
+                      </Label>
+                      {(bonusGame2Category === "european_roulette" || bonusGame2Category === "american_roulette" || bonusGame2Category === "french_roulette") && (
+                        <Select value={bonusGame2Type} onValueChange={setBonusGame2Type}>
+                          <SelectTrigger id="bonusGame2Type">
+                            <SelectValue placeholder="Select bet type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1s">1s</SelectItem>
+                            <SelectItem value="2s">2s</SelectItem>
+                            <SelectItem value="3s">3s</SelectItem>
+                            <SelectItem value="4s">4s</SelectItem>
+                            <SelectItem value="6s">6s</SelectItem>
+                            <SelectItem value="12s">12s</SelectItem>
+                            <SelectItem value="18s">18s</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {bonusGame2Category === "baccarat" && (
+                        <Select value={bonusGame2Type} onValueChange={setBonusGame2Type}>
+                          <SelectTrigger id="bonusGame2Type">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Player">Player</SelectItem>
+                            <SelectItem value="Banker">Banker</SelectItem>
+                            <SelectItem value="Tie">Tie</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {bonusGame2Category === "blackjack" && (
+                        <Input
+                          id="bonusGame2Type"
+                          value=""
+                          disabled
+                          placeholder="No types available"
+                          className="bg-muted"
+                        />
+                      )}
+                      {bonusGame2Category === "slots" && (
+                        <Select
+                          value={bonusGame2Risk || "medium"}
+                          onValueChange={(v) => setBonusGame2Risk(v as RiskLevel)}
+                        >
+                          <SelectTrigger id="bonusGame2Risk">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="very_low">Very Low (0.25x)</SelectItem>
+                            <SelectItem value="low">Low (0.5x)</SelectItem>
+                            <SelectItem value="medium">Medium (1.0x)</SelectItem>
+                            <SelectItem value="high">High (2.0x)</SelectItem>
+                            <SelectItem value="very_high">Very High (4.0x)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {bonusGame2Category === "digits" && (
+                        <Select value={bonusGame2Type} onValueChange={setBonusGame2Type}>
+                          <SelectTrigger id="bonusGame2Type">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {digitsOptions.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Line 2: Bet Size and Time Per Bet */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="bonusGame2BetSize">Bet Size ($)</Label>
+                      <Input
+                        id="bonusGame2BetSize"
+                        type="number"
+                        step="0.01"
+                        value={bonusGame2BetSize}
+                        onChange={(e) => setBonusGame2BetSize(Number(e.target.value))}
+                        placeholder="5.0"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bonusGame2TimePerBet">Time Per Bet (seconds)</Label>
+                      <Input
+                        id="bonusGame2TimePerBet"
+                        type="number"
+                        step="0.1"
+                        value={bonusGame2TimePerBet}
+                        onChange={(e) => setBonusGame2TimePerBet(Number(e.target.value))}
+                        placeholder="3.0"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Line 3: Game Weighting and House Edge */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="bonusGame2Contribution">Game Weighting (%)</Label>
+                      <Input
+                        id="bonusGame2Contribution"
+                        type="number"
+                        step="0.1"
+                        value={bonusGame2Contribution}
+                        onChange={(e) => setBonusGame2Contribution(Number(e.target.value))}
+                        placeholder="100.0"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Label htmlFor="bonusGame2HouseEdge">House Edge (%)</Label>
+                        <button
+                          type="button"
+                          onClick={() => setBonusGame2HouseEdgeLocked(!bonusGame2HouseEdgeLocked)}
+                          className="absolute top-0 right-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {bonusGame2HouseEdgeLocked ? (
+                            <>
+                              <Lock className="h-3 w-3" />
+                              <span>Edit</span>
+                            </>
+                          ) : (
+                            <>
+                              <Unlock className="h-3 w-3" />
+                              <span>Edit</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <Input
+                        id="bonusGame2HouseEdge"
+                        type="number"
+                        step="0.01"
+                        disabled={bonusGame2HouseEdgeLocked}
+                        value={bonusGame2HouseEdge !== null ? bonusGame2HouseEdge : (getDefaultHouseEdge(bonusGame2Name) ?? "")}
+                        onChange={(e) => setBonusGame2HouseEdge(e.target.value ? Number(e.target.value) : null)}
+                        placeholder={getDefaultHouseEdge(bonusGame2Name) !== null ? "" : "Variable"}
+                        className={bonusGame2HouseEdgeLocked ? "bg-muted cursor-not-allowed" : ""}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {getDefaultHouseEdge(bonusGame2Name) !== null 
+                          ? `Default value (${getDefaultHouseEdge(bonusGame2Name)}%)`
+                          : "Variable based on threshold"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Switch Balance */}
+                  <div className="space-y-2 pt-4 border-t">
+                    <div className="grid grid-cols-2 gap-4 items-center">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl font-semibold text-red-600 dark:text-red-400 whitespace-nowrap">Switch Balance ($):</span>
+                        <span className="text-xl font-semibold text-red-600 dark:text-red-400">
+                          {(() => {
+                            const value = calculateBonusGame2SwitchBalance();
+                            return Number.isInteger(value) ? value.toString() : value.toFixed(2);
+                          })()}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={bonusGame2SwitchBalanceCalculationType}
+                          onValueChange={(v) => setBonusGame2SwitchBalanceCalculationType(v as "deposit" | "bonus" | "both" | "fixed")}
+                        >
+                          <SelectTrigger className="w-[120px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="deposit">Deposit</SelectItem>
+                            <SelectItem value="bonus">Bonus</SelectItem>
+                            <SelectItem value="both">Both</SelectItem>
+                            <SelectItem value="fixed">Fixed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <span className="text-lg">✕</span>
+                        <Input
+                          id="bonusGame2SwitchBalanceMultiplier"
+                          type="number"
+                          step="1"
+                          min="1"
+                          value={bonusGame2SwitchBalanceMultiplier}
+                          onChange={(e) => {
+                            const value = Number(e.target.value);
+                            if (value > 99999) {
+                              return;
+                            }
+                            if (value > 0) {
+                              setBonusGame2SwitchBalanceMultiplier(value);
+                            }
+                          }}
+                          className="w-[120px]"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Balance threshold to switch from Game 1 Bonus to Game 2 Bonus
+                    </p>
+                  </div>
+                </CardContent>
+              ) : (
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Enable two-tier strategy to switch from Game 1 Bonus to Game 2 Bonus at a specific balance threshold.
+                  </p>
+                </CardContent>
+              )}
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* BONUS PLAY CONFIGURATION (Only for Cashback) */}
+      {bonusType === "cashback" && applyCashbackBonusPlay && (
+        <div className="mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* GAME 1 BONUS CONFIGURATION */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Game 1 Bonus (Bonus Play)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Line 1: Game and Game Type */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="cashbackBonusGame1Category">Game Type</Label>
+                    <Select value={cashbackBonusGame1Category} onValueChange={(v) => {
+                      const newCategory = v as GameCategory;
+                      setCashbackBonusGame1Category(newCategory);
+                      const defaultType = getDefaultGameType(newCategory);
+                      if (newCategory === "slots") {
+                        setCashbackBonusGame1Risk(defaultType as RiskLevel);
+                      } else if (newCategory === "digits") {
+                        setCashbackBonusGame1Type(defaultType);
+                        setCashbackBonusGame1DigitsType(defaultType);
+                      } else {
+                        setCashbackBonusGame1Type(defaultType);
+                      }
+                    }}>
+                      <SelectTrigger id="cashbackBonusGame1Category">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="european_roulette">European Roulette</SelectItem>
+                        <SelectItem value="american_roulette">American Roulette</SelectItem>
+                        <SelectItem value="french_roulette">French Roulette</SelectItem>
+                        <SelectItem value="baccarat">Baccarat</SelectItem>
+                        <SelectItem value="blackjack">Blackjack</SelectItem>
+                        <SelectItem value="slots">Slots</SelectItem>
+                        <SelectItem value="digits">Digits</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cashbackBonusGame1Type">
+                      {cashbackBonusGame1Category === "slots" ? "Risk Level" : "Selection"}
+                    </Label>
+                    {(cashbackBonusGame1Category === "european_roulette" || cashbackBonusGame1Category === "american_roulette" || cashbackBonusGame1Category === "french_roulette") && (
+                      <Select value={cashbackBonusGame1Type} onValueChange={setCashbackBonusGame1Type}>
+                        <SelectTrigger id="cashbackBonusGame1Type">
+                          <SelectValue placeholder="Select bet type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1s">1s</SelectItem>
+                          <SelectItem value="2s">2s</SelectItem>
+                          <SelectItem value="3s">3s</SelectItem>
+                          <SelectItem value="4s">4s</SelectItem>
+                          <SelectItem value="6s">6s</SelectItem>
+                          <SelectItem value="12s">12s</SelectItem>
+                          <SelectItem value="18s">18s</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {cashbackBonusGame1Category === "baccarat" && (
+                      <Select value={cashbackBonusGame1Type} onValueChange={setCashbackBonusGame1Type}>
+                        <SelectTrigger id="cashbackBonusGame1Type">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Player">Player</SelectItem>
+                          <SelectItem value="Banker">Banker</SelectItem>
+                          <SelectItem value="Tie">Tie</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {cashbackBonusGame1Category === "blackjack" && (
+                      <Input
+                        id="cashbackBonusGame1Type"
+                        value=""
+                        disabled
+                        placeholder="No types available"
+                        className="bg-muted"
+                      />
+                    )}
+                    {cashbackBonusGame1Category === "slots" && (
+                      <Select
+                        value={cashbackBonusGame1Risk || "medium"}
+                        onValueChange={(v) => setCashbackBonusGame1Risk(v as RiskLevel)}
+                      >
+                        <SelectTrigger id="cashbackBonusGame1Risk">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="very_low">Very Low (0.25x)</SelectItem>
+                          <SelectItem value="low">Low (0.5x)</SelectItem>
+                          <SelectItem value="medium">Medium (1.0x)</SelectItem>
+                          <SelectItem value="high">High (2.0x)</SelectItem>
+                          <SelectItem value="very_high">Very High (4.0x)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {cashbackBonusGame1Category === "digits" && (
+                      <Select value={cashbackBonusGame1Type} onValueChange={setCashbackBonusGame1Type}>
+                        <SelectTrigger id="cashbackBonusGame1Type">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {digitsOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                </div>
+
+                {/* Line 2: Bet Size and Time Per Bet */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="cashbackBonusGame1BetSize">Bet Size ($)</Label>
+                    <Input
+                      id="cashbackBonusGame1BetSize"
+                      type="number"
+                      step="0.01"
+                      value={cashbackBonusGame1BetSize}
+                      onChange={(e) => setCashbackBonusGame1BetSize(Number(e.target.value))}
+                      placeholder="5.0"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cashbackBonusGame1TimePerBet">Time Per Bet (seconds)</Label>
+                    <Input
+                      id="cashbackBonusGame1TimePerBet"
+                      type="number"
+                      step="0.1"
+                      value={cashbackBonusGame1TimePerBet}
+                      onChange={(e) => setCashbackBonusGame1TimePerBet(Number(e.target.value))}
+                      placeholder="3.0"
+                    />
+                  </div>
+                </div>
+
+                {/* Line 3: Game Weighting and House Edge */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="cashbackBonusGame1Contribution">Game Weighting (%)</Label>
+                    <Input
+                      id="cashbackBonusGame1Contribution"
+                      type="number"
+                      step="0.1"
+                      value={cashbackBonusGame1Contribution}
+                      onChange={(e) => setCashbackBonusGame1Contribution(Number(e.target.value))}
+                      placeholder="100.0"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Label htmlFor="cashbackBonusGame1HouseEdge">House Edge (%)</Label>
+                      <button
+                        type="button"
+                        onClick={() => setCashbackBonusGame1HouseEdgeLocked(!cashbackBonusGame1HouseEdgeLocked)}
+                        className="absolute top-0 right-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {cashbackBonusGame1HouseEdgeLocked ? (
+                          <>
+                            <Lock className="h-3 w-3" />
+                            <span>Edit</span>
+                          </>
+                        ) : (
+                          <>
+                            <Unlock className="h-3 w-3" />
+                            <span>Edit</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <Input
+                      id="cashbackBonusGame1HouseEdge"
+                      type="number"
+                      step="0.01"
+                      disabled={cashbackBonusGame1HouseEdgeLocked}
+                      value={cashbackBonusGame1HouseEdge !== null ? cashbackBonusGame1HouseEdge : (getDefaultHouseEdge(cashbackBonusGame1Name) ?? "")}
+                      onChange={(e) => setCashbackBonusGame1HouseEdge(e.target.value ? Number(e.target.value) : null)}
+                      placeholder={getDefaultHouseEdge(cashbackBonusGame1Name) !== null ? "" : "Variable"}
+                      className={cashbackBonusGame1HouseEdgeLocked ? "bg-muted cursor-not-allowed" : ""}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {getDefaultHouseEdge(cashbackBonusGame1Name) !== null 
+                        ? `Default value (${getDefaultHouseEdge(cashbackBonusGame1Name)}%)`
+                        : "Variable based on threshold"}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* GAME 2 BONUS CONFIGURATION */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Game 2 Bonus (Bonus Play)</CardTitle>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="cashbackBonusGame2Enabled"
+                      checked={cashbackBonusGame2Enabled}
+                      onCheckedChange={(checked) => setCashbackBonusGame2Enabled(checked as boolean)}
+                    />
+                    <Label htmlFor="cashbackBonusGame2Enabled" className="font-normal cursor-pointer">
+                      Enable Two-Tier Strategy
+                    </Label>
+                  </div>
+                </div>
+              </CardHeader>
+              {cashbackBonusGame2Enabled ? (
+                <CardContent className="space-y-4">
+                  {/* Line 1: Game and Game Type */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cashbackBonusGame2Category">Game Type</Label>
+                      <Select value={cashbackBonusGame2Category} onValueChange={(v) => {
+                        const newCategory = v as GameCategory;
+                        setCashbackBonusGame2Category(newCategory);
+                        const defaultType = getDefaultGameType(newCategory);
+                        if (newCategory === "slots") {
+                          setCashbackBonusGame2Risk(defaultType as RiskLevel);
+                        } else if (newCategory === "digits") {
+                          setCashbackBonusGame2Type(defaultType);
+                          setCashbackBonusGame2DigitsType(defaultType);
+                        } else {
+                          setCashbackBonusGame2Type(defaultType);
+                        }
+                      }}>
+                        <SelectTrigger id="cashbackBonusGame2Category">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="european_roulette">European Roulette</SelectItem>
+                          <SelectItem value="american_roulette">American Roulette</SelectItem>
+                          <SelectItem value="french_roulette">French Roulette</SelectItem>
+                          <SelectItem value="baccarat">Baccarat</SelectItem>
+                          <SelectItem value="blackjack">Blackjack</SelectItem>
+                          <SelectItem value="slots">Slots</SelectItem>
+                          <SelectItem value="digits">Digits</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="cashbackBonusGame2Type">
+                        {cashbackBonusGame2Category === "slots" ? "Risk Level" : "Selection"}
+                      </Label>
+                      {(cashbackBonusGame2Category === "european_roulette" || cashbackBonusGame2Category === "american_roulette" || cashbackBonusGame2Category === "french_roulette") && (
+                        <Select value={cashbackBonusGame2Type} onValueChange={setCashbackBonusGame2Type}>
+                          <SelectTrigger id="cashbackBonusGame2Type">
+                            <SelectValue placeholder="Select bet type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1s">1s</SelectItem>
+                            <SelectItem value="2s">2s</SelectItem>
+                            <SelectItem value="3s">3s</SelectItem>
+                            <SelectItem value="4s">4s</SelectItem>
+                            <SelectItem value="6s">6s</SelectItem>
+                            <SelectItem value="12s">12s</SelectItem>
+                            <SelectItem value="18s">18s</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {cashbackBonusGame2Category === "baccarat" && (
+                        <Select value={cashbackBonusGame2Type} onValueChange={setCashbackBonusGame2Type}>
+                          <SelectTrigger id="cashbackBonusGame2Type">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Player">Player</SelectItem>
+                            <SelectItem value="Banker">Banker</SelectItem>
+                            <SelectItem value="Tie">Tie</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {cashbackBonusGame2Category === "blackjack" && (
+                        <Input
+                          id="cashbackBonusGame2Type"
+                          value=""
+                          disabled
+                          placeholder="No types available"
+                          className="bg-muted"
+                        />
+                      )}
+                      {cashbackBonusGame2Category === "slots" && (
+                        <Select
+                          value={cashbackBonusGame2Risk || "medium"}
+                          onValueChange={(v) => setCashbackBonusGame2Risk(v as RiskLevel)}
+                        >
+                          <SelectTrigger id="cashbackBonusGame2Risk">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="very_low">Very Low (0.25x)</SelectItem>
+                            <SelectItem value="low">Low (0.5x)</SelectItem>
+                            <SelectItem value="medium">Medium (1.0x)</SelectItem>
+                            <SelectItem value="high">High (2.0x)</SelectItem>
+                            <SelectItem value="very_high">Very High (4.0x)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {cashbackBonusGame2Category === "digits" && (
+                        <Select value={cashbackBonusGame2Type} onValueChange={setCashbackBonusGame2Type}>
+                          <SelectTrigger id="cashbackBonusGame2Type">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {digitsOptions.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Line 2: Bet Size and Time Per Bet */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cashbackBonusGame2BetSize">Bet Size ($)</Label>
+                      <Input
+                        id="cashbackBonusGame2BetSize"
+                        type="number"
+                        step="0.01"
+                        value={cashbackBonusGame2BetSize}
+                        onChange={(e) => setCashbackBonusGame2BetSize(Number(e.target.value))}
+                        placeholder="5.0"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="cashbackBonusGame2TimePerBet">Time Per Bet (seconds)</Label>
+                      <Input
+                        id="cashbackBonusGame2TimePerBet"
+                        type="number"
+                        step="0.1"
+                        value={cashbackBonusGame2TimePerBet}
+                        onChange={(e) => setCashbackBonusGame2TimePerBet(Number(e.target.value))}
+                        placeholder="3.0"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Line 3: Game Weighting and House Edge */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cashbackBonusGame2Contribution">Game Weighting (%)</Label>
+                      <Input
+                        id="cashbackBonusGame2Contribution"
+                        type="number"
+                        step="0.1"
+                        value={cashbackBonusGame2Contribution}
+                        onChange={(e) => setCashbackBonusGame2Contribution(Number(e.target.value))}
+                        placeholder="100.0"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Label htmlFor="cashbackBonusGame2HouseEdge">House Edge (%)</Label>
+                        <button
+                          type="button"
+                          onClick={() => setCashbackBonusGame2HouseEdgeLocked(!cashbackBonusGame2HouseEdgeLocked)}
+                          className="absolute top-0 right-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {cashbackBonusGame2HouseEdgeLocked ? (
+                            <>
+                              <Lock className="h-3 w-3" />
+                              <span>Edit</span>
+                            </>
+                          ) : (
+                            <>
+                              <Unlock className="h-3 w-3" />
+                              <span>Edit</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <Input
+                        id="cashbackBonusGame2HouseEdge"
+                        type="number"
+                        step="0.01"
+                        disabled={cashbackBonusGame2HouseEdgeLocked}
+                        value={cashbackBonusGame2HouseEdge !== null ? cashbackBonusGame2HouseEdge : (getDefaultHouseEdge(cashbackBonusGame2Name) ?? "")}
+                        onChange={(e) => setCashbackBonusGame2HouseEdge(e.target.value ? Number(e.target.value) : null)}
+                        placeholder={getDefaultHouseEdge(cashbackBonusGame2Name) !== null ? "" : "Variable"}
+                        className={cashbackBonusGame2HouseEdgeLocked ? "bg-muted cursor-not-allowed" : ""}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {getDefaultHouseEdge(cashbackBonusGame2Name) !== null 
+                          ? `Default value (${getDefaultHouseEdge(cashbackBonusGame2Name)}%)`
+                          : "Variable based on threshold"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Switch Balance */}
+                  <div className="space-y-2 pt-4 border-t">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl font-semibold text-red-600 dark:text-red-400 whitespace-nowrap">Switch Balance ($):</span>
+                        <span className="text-xl font-semibold text-red-600 dark:text-red-400">
+                          {(() => {
+                            const value = (() => {
+                              switch (cashbackBonusGame2SwitchBalanceCalculationType) {
+                                case "deposit":
+                                  return deposit * cashbackBonusGame2SwitchBalanceMultiplier;
+                                case "bonus":
+                                  return cashbackAmount * cashbackBonusGame2SwitchBalanceMultiplier;
+                                case "both":
+                                  return (deposit + cashbackAmount) * cashbackBonusGame2SwitchBalanceMultiplier;
+                                case "fixed":
+                                  return cashbackBonusGame2SwitchBalanceMultiplier;
+                                default:
+                                  return cashbackBonusGame2SwitchBalanceMultiplier;
+                              }
+                            })();
+                            return Number.isInteger(value) ? value.toString() : value.toFixed(2);
+                          })()}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={cashbackBonusGame2SwitchBalanceCalculationType}
+                          onValueChange={(v) => setCashbackBonusGame2SwitchBalanceCalculationType(v as "deposit" | "bonus" | "both" | "fixed")}
+                        >
+                          <SelectTrigger className="w-[120px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="deposit">Deposit</SelectItem>
+                            <SelectItem value="bonus">Bonus</SelectItem>
+                            <SelectItem value="both">Both</SelectItem>
+                            <SelectItem value="fixed">Fixed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <span className="text-lg">✕</span>
+                        <Input
+                          id="cashbackBonusGame2SwitchBalanceMultiplier"
+                          type="number"
+                          step="1"
+                          min="1"
+                          value={cashbackBonusGame2SwitchBalanceMultiplier}
+                          onChange={(e) => {
+                            const value = Number(e.target.value);
+                            if (value > 99999) {
+                              return;
+                            }
+                            if (value > 0) {
+                              setCashbackBonusGame2SwitchBalanceMultiplier(value);
+                            }
+                          }}
+                          className="w-[120px]"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Balance threshold to switch from Game 1 Bonus to Game 2 Bonus
+                    </p>
+                  </div>
+                </CardContent>
+              ) : (
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Enable two-tier strategy to switch from Game 1 Bonus to Game 2 Bonus at a specific balance threshold.
+                  </p>
+                </CardContent>
+              )}
+            </Card>
+          </div>
+        </div>
+      )}
 
       {/* COVERPLAY CONFIGURATIONS - SIDE BY SIDE */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
