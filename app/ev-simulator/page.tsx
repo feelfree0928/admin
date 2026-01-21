@@ -1990,7 +1990,7 @@ export default function EVSimulatorPage() {
               {/* Bonus Wagering Requirement (only for Post-Wager) */}
               {bonusType === "postwager" && (
                 <div className="ml-6 w-1/2">
-                  <div className="space-y-2">
+                  <div className="mt-6 p-4 border-2 border-gray dark:border-white rounded-md space-y-2">
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id="applyBonusPlay"
@@ -2053,7 +2053,7 @@ export default function EVSimulatorPage() {
               {/* Bonus Wagering Requirement (only for Cashback) */}
               {bonusType === "cashback" && (
                 <div className="ml-6 w-1/2">
-                  <div className="space-y-2">
+                  <div className="mt-6 p-4 border-2 border-gray dark:border-white rounded-md space-y-2">
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id="applyCashbackBonusPlay"
