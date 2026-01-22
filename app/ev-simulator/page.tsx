@@ -145,10 +145,14 @@ export default function EVSimulatorPage() {
   const [bonusType, setBonusType] = useState<BonusType>("cashable");
   const [deposit, setDeposit] = useState<number>(100);
   const [bonusAmount, setBonusAmount] = useState<number>(100);
-  const [wagering, setWagering] = useState<number>(6000);
+  const [wagering, setWagering] = useState<number>(3000);
   const [cashbackType, setCashbackType] = useState<CashbackType>("on_loss");
   const [cashbackAmount, setCashbackAmount] = useState<number>(0);
   const [targetBalance, setTargetBalance] = useState<number>(0);
+  const [targetBalanceCalculationType, setTargetBalanceCalculationType] = useState<"deposit" | "bonus" | "both" | "fixed">("deposit");
+  const [targetBalanceMultiplier, setTargetBalanceMultiplier] = useState<number>(3);
+  const [cashbackAmountCalculationType, setCashbackAmountCalculationType] = useState<"deposit" | "bonus" | "both" | "fixed">("deposit");
+  const [cashbackAmountMultiplier, setCashbackAmountMultiplier] = useState<number>(0.1);
   const [wagerTarget, setWagerTarget] = useState<number>(2000);
   const [cashbackRate, setCashbackRate] = useState<number>(0.1);
   const [cashbackCap, setCashbackCap] = useState<number>(50);
@@ -182,7 +186,7 @@ export default function EVSimulatorPage() {
   const [bonusGame2Contribution, setBonusGame2Contribution] = useState<number>(100);
   const [bonusGame2SwitchBalance, setBonusGame2SwitchBalance] = useState<number>(400);
   const [bonusGame2SwitchBalanceCalculationType, setBonusGame2SwitchBalanceCalculationType] = useState<"deposit" | "bonus" | "both" | "fixed">("bonus");
-  const [bonusGame2SwitchBalanceMultiplier, setBonusGame2SwitchBalanceMultiplier] = useState<number>(30);
+  const [bonusGame2SwitchBalanceMultiplier, setBonusGame2SwitchBalanceMultiplier] = useState<number>(4);
   const [bonusGame2HouseEdge, setBonusGame2HouseEdge] = useState<number | null>(null);
   const [bonusGame2HouseEdgeLocked, setBonusGame2HouseEdgeLocked] = useState<boolean>(true);
   const [bonusGame2Risk, setBonusGame2Risk] = useState<RiskLevel>("medium");
@@ -215,7 +219,7 @@ export default function EVSimulatorPage() {
   const [cashbackBonusGame2Contribution, setCashbackBonusGame2Contribution] = useState<number>(100);
   const [cashbackBonusGame2SwitchBalance, setCashbackBonusGame2SwitchBalance] = useState<number>(400);
   const [cashbackBonusGame2SwitchBalanceCalculationType, setCashbackBonusGame2SwitchBalanceCalculationType] = useState<"deposit" | "bonus" | "both" | "fixed">("bonus");
-  const [cashbackBonusGame2SwitchBalanceMultiplier, setCashbackBonusGame2SwitchBalanceMultiplier] = useState<number>(30);
+  const [cashbackBonusGame2SwitchBalanceMultiplier, setCashbackBonusGame2SwitchBalanceMultiplier] = useState<number>(4);
   const [cashbackBonusGame2HouseEdge, setCashbackBonusGame2HouseEdge] = useState<number | null>(null);
   const [cashbackBonusGame2HouseEdgeLocked, setCashbackBonusGame2HouseEdgeLocked] = useState<boolean>(true);
   const [cashbackBonusGame2Risk, setCashbackBonusGame2Risk] = useState<RiskLevel>("medium");
@@ -921,6 +925,38 @@ export default function EVSimulatorPage() {
     }
   };
 
+  // Calculate target balance based on selected type and multiplier
+  const calculateTargetBalance = (): number => {
+    switch (targetBalanceCalculationType) {
+      case "deposit":
+        return deposit * targetBalanceMultiplier;
+      case "bonus":
+        return bonusAmount * targetBalanceMultiplier;
+      case "both":
+        return (deposit + bonusAmount) * targetBalanceMultiplier;
+      case "fixed":
+        return targetBalanceMultiplier;
+      default:
+        return targetBalanceMultiplier;
+    }
+  };
+
+  // Calculate cashback amount based on selected type and multiplier
+  const calculateCashbackAmount = (): number => {
+    switch (cashbackAmountCalculationType) {
+      case "deposit":
+        return deposit * cashbackAmountMultiplier;
+      case "bonus":
+        return bonusAmount * cashbackAmountMultiplier;
+      case "both":
+        return (deposit + bonusAmount) * cashbackAmountMultiplier;
+      case "fixed":
+        return cashbackAmountMultiplier;
+      default:
+        return cashbackAmountMultiplier;
+    }
+  };
+
   // Calculate bonus game 2 switch balance
   const calculateBonusGame2SwitchBalance = (): number => {
     switch (bonusGame2SwitchBalanceCalculationType) {
@@ -1020,6 +1056,50 @@ export default function EVSimulatorPage() {
       setCashbackBonusGame2SwitchBalance(calculated);
     }
   }, [cashbackBonusGame2SwitchBalanceCalculationType, cashbackBonusGame2SwitchBalanceMultiplier, deposit, cashbackAmount, cashbackBonusGame2Enabled]);
+
+  // Auto-update target balance when calculation inputs change
+  useEffect(() => {
+    let calculated: number;
+    switch (targetBalanceCalculationType) {
+      case "deposit":
+        calculated = deposit * targetBalanceMultiplier;
+        break;
+      case "bonus":
+        calculated = bonusAmount * targetBalanceMultiplier;
+        break;
+      case "both":
+        calculated = (deposit + bonusAmount) * targetBalanceMultiplier;
+        break;
+      case "fixed":
+        calculated = targetBalanceMultiplier;
+        break;
+      default:
+        calculated = targetBalanceMultiplier;
+    }
+    setTargetBalance(calculated);
+  }, [targetBalanceCalculationType, targetBalanceMultiplier, deposit, bonusAmount]);
+
+  // Auto-update cashback amount when calculation inputs change
+  useEffect(() => {
+    let calculated: number;
+    switch (cashbackAmountCalculationType) {
+      case "deposit":
+        calculated = deposit * cashbackAmountMultiplier;
+        break;
+      case "bonus":
+        calculated = bonusAmount * cashbackAmountMultiplier;
+        break;
+      case "both":
+        calculated = (deposit + bonusAmount) * cashbackAmountMultiplier;
+        break;
+      case "fixed":
+        calculated = cashbackAmountMultiplier;
+        break;
+      default:
+        calculated = cashbackAmountMultiplier;
+    }
+    setCashbackAmount(calculated);
+  }, [cashbackAmountCalculationType, cashbackAmountMultiplier, deposit, bonusAmount]);
 
   // Set default type if empty when category is set
   useEffect(() => {
@@ -1528,7 +1608,7 @@ export default function EVSimulatorPage() {
           <Alert variant="destructive" className="mt-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Cannot connect to backend at http://5.78.132.169:8000. Please ensure the Julia backend is running.
+              Cannot connect to backend at http://localhost:8000. Please ensure the Julia backend is running.
             </AlertDescription>
           </Alert>
         )}
@@ -1571,16 +1651,18 @@ export default function EVSimulatorPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="bonusAmount">Bonus Amount ($)</Label>
-                  <Input
-                    id="bonusAmount"
-                    type="number"
-                    value={bonusAmount}
-                    onChange={(e) => setBonusAmount(Number(e.target.value))}
-                    placeholder="100"
-                  />
-                </div>
+                {bonusType !== "cashback" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="bonusAmount">Bonus Amount ($)</Label>
+                    <Input
+                      id="bonusAmount"
+                      type="number"
+                      value={bonusAmount}
+                      onChange={(e) => setBonusAmount(Number(e.target.value))}
+                      placeholder="100"
+                    />
+                  </div>
+                )}
 
                 {bonusType !== "freespins" && (
                   <div className="space-y-2">
@@ -1665,26 +1747,101 @@ export default function EVSimulatorPage() {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="targetBalance">Target Balance ($)</Label>
-                    <Input
-                      id="targetBalance"
-                      type="number"
-                      value={targetBalance}
-                      onChange={(e) => setTargetBalance(Number(e.target.value))}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cashbackAmount">Cashback Amount ($)</Label>
-                    <Input
-                      id="cashbackAmount"
-                      type="number"
-                      value={cashbackAmount}
-                      onChange={(e) => setCashbackAmount(Number(e.target.value))}
-                      placeholder="0"
-                    />
+                <div className="pt-4 border-t">
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Target Balance */}
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-4 items-center">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl font-semibold text-red-600 dark:text-white whitespace-nowrap">Target Balance ($):</span>
+                          <span className="text-xl font-semibold text-red-600 dark:text-white">
+                            {(() => {
+                              const value = calculateTargetBalance();
+                              return Number.isInteger(value) ? value.toString() : value.toFixed(2);
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={targetBalanceCalculationType}
+                            onValueChange={(v) => setTargetBalanceCalculationType(v as "deposit" | "bonus" | "both" | "fixed")}
+                          >
+                            <SelectTrigger className="w-[120px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="deposit">Deposit</SelectItem>
+                              <SelectItem value="fixed">Fixed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <span className="text-lg">✕</span>
+                          <Input
+                            id="targetBalanceMultiplier"
+                            type="number"
+                            step="1"
+                            min="0"
+                            value={targetBalanceMultiplier}
+                            onChange={(e) => {
+                              const value = Number(e.target.value);
+                              if (value > 99999) {
+                                return;
+                              }
+                              if (value >= 0) {
+                                setTargetBalanceMultiplier(value);
+                              }
+                            }}
+                            className="w-[120px]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Cashback Amount */}
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-4 items-center">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl font-semibold text-red-600 dark:text-white whitespace-nowrap">Cashback Amount ($):</span>
+                          <span className="text-xl font-semibold text-red-600 dark:text-white">
+                            {(() => {
+                              const value = calculateCashbackAmount();
+                              return Number.isInteger(value) ? value.toString() : value.toFixed(2);
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={cashbackAmountCalculationType}
+                            onValueChange={(v) => setCashbackAmountCalculationType(v as "deposit" | "bonus" | "both" | "fixed")}
+                          >
+                            <SelectTrigger className="w-[120px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="deposit">Deposit</SelectItem>
+                              <SelectItem value="fixed">Fixed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <span className="text-lg">✕</span>
+                          <Input
+                            id="cashbackAmountMultiplier"
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            value={cashbackAmountMultiplier}
+                            onChange={(e) => {
+                              const value = Number(e.target.value);
+                              if (value > 99999) {
+                                return;
+                              }
+                              if (value >= 0) {
+                                setCashbackAmountMultiplier(value);
+                              }
+                            }}
+                            className="w-[120px]"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

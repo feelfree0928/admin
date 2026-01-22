@@ -20,7 +20,7 @@
       "slots": 3,
       "digits": null
     },
-    "numSessions": 100000
+    "numSessions": 1000000
   },
   "features": {
     "preCoverplayEnabled": false,
