@@ -27,6 +27,10 @@ export interface GlobalConfig {
       digits: number | null;
     };
     numSessions: number;
+    baseProfit: {
+      evPercent: number;
+      hourlyRate: number;
+    };
   };
   features: {
     preCoverplayEnabled: boolean;

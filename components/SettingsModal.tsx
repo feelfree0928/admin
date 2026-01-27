@@ -33,6 +33,10 @@ interface GlobalConfig {
       digits: number | null;
     };
     numSessions: number;
+    baseProfit: {
+      evPercent: number;
+      hourlyRate: number;
+    };
   };
   features: {
     preCoverplayEnabled: boolean;
@@ -172,6 +176,22 @@ export function SettingsModal({ open, onOpenChange, currentConfig, onConfigUpdat
         features: {
           ...config.features,
           [feature]: value
+        }
+      });
+    }
+  };
+
+  const updateBaseProfit = (field: keyof GlobalConfig['defaults']['baseProfit'], value: string) => {
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue >= 0 && config) {
+      setConfig({
+        ...config,
+        defaults: {
+          ...config.defaults,
+          baseProfit: {
+            ...config.defaults.baseProfit,
+            [field]: numValue
+          }
         }
       });
     }
@@ -457,6 +477,47 @@ export function SettingsModal({ open, onOpenChange, currentConfig, onConfigUpdat
                     <p className="text-xs text-muted-foreground">
                       Higher values = more accurate results but slower. Recommended: 1,000,000 or higher.
                     </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Base Profit Calculation</CardTitle>
+                  <CardDescription>
+                    Configure how Base Profit is calculated: max(EV × %, Hours × Hourly Rate)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="evPercent">EV Percentage (%)</Label>
+                      <Input
+                        id="evPercent"
+                        type="number"
+                        step="1"
+                        min="0"
+                        value={config.defaults.baseProfit?.evPercent ?? 10}
+                        onChange={(e) => updateBaseProfit('evPercent', e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Percentage of Expected Value (e.g., 10 = 10% of EV)
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
+                      <Input
+                        id="hourlyRate"
+                        type="number"
+                        step="1"
+                        min="0"
+                        value={config.defaults.baseProfit?.hourlyRate ?? 15}
+                        onChange={(e) => updateBaseProfit('hourlyRate', e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Minimum hourly rate in dollars (e.g., 15 = $15/hour)
+                      </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

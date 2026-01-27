@@ -20,7 +20,11 @@
       "slots": 3,
       "digits": null
     },
-    "numSessions": 1000000
+    "numSessions": 1000000,
+    "baseProfit": {
+      "evPercent": 10,
+      "hourlyRate": 15
+    }
   },
   "features": {
     "preCoverplayEnabled": false,

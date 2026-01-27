@@ -303,7 +303,7 @@ export default function EVSimulatorPage() {
   // Test backend connection
   const testBackendConnection = async (): Promise<boolean> => {
     try {
-      const response = await fetch("http://5.78.132.169:8000/health");
+      const response = await fetch("http://localhost:8000/health");
       if (response.ok) {
         const data = await response.json();
         return data.status === "healthy";
@@ -1521,7 +1521,7 @@ export default function EVSimulatorPage() {
       }
 
       // Make API call
-      const apiUrl = "http://5.78.132.169:8000/api/simulate";
+      const apiUrl = "http://localhost:8000/api/simulate";
       
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -1545,7 +1545,7 @@ export default function EVSimulatorPage() {
         
         // Add helpful context for 404
         if (response.status === 404) {
-          errorMessage += ". Is the backend running on http://5.78.132.169:8000?";
+          errorMessage += ". Is the backend running on http://localhost:8000?";
         }
         
         throw new Error(errorMessage);
@@ -3959,7 +3959,7 @@ export default function EVSimulatorPage() {
             </Badge>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -3975,6 +3975,39 @@ export default function EVSimulatorPage() {
                 </p>
               </CardContent>
             </Card>
+
+            {/* Base Profit Card */}
+            {(() => {
+              const averageHours = results.results.average_time_minutes / 60;
+              const evPercent = globalConfig?.defaults?.baseProfit?.evPercent ?? 10;
+              const hourlyRate = globalConfig?.defaults?.baseProfit?.hourlyRate ?? 15;
+
+              const evBasedProfit = results.results.expected_value * (evPercent / 100);
+              const hourBasedProfit = averageHours * hourlyRate;
+
+              const baseProfit = Math.max(evBasedProfit, hourBasedProfit);
+              const baseProfitMethod = evBasedProfit >= hourBasedProfit 
+                ? `${evPercent}% of EV` 
+                : `$${hourlyRate}/hr × ${averageHours.toFixed(2)}h`;
+
+              return (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Base Profit
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold">
+                      {formatCurrency(baseProfit)}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Based on {baseProfitMethod}
+                    </p>
+                  </CardContent>
+                </Card>
+              );
+            })()}
 
             <Card>
               <CardHeader className="pb-3">
