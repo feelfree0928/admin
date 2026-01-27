@@ -303,7 +303,7 @@ export default function EVSimulatorPage() {
   // Test backend connection
   const testBackendConnection = async (): Promise<boolean> => {
     try {
-      const response = await fetch("http://localhost:8000/health");
+      const response = await fetch("http://5.78.132.169:8000/health");
       if (response.ok) {
         const data = await response.json();
         return data.status === "healthy";
@@ -1521,7 +1521,7 @@ export default function EVSimulatorPage() {
       }
 
       // Make API call
-      const apiUrl = "http://localhost:8000/api/simulate";
+      const apiUrl = "http://5.78.132.169:8000/api/simulate";
       
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -1545,7 +1545,7 @@ export default function EVSimulatorPage() {
         
         // Add helpful context for 404
         if (response.status === 404) {
-          errorMessage += ". Is the backend running on http://localhost:8000?";
+          errorMessage += ". Is the backend running on http://5.78.132.169:8000?";
         }
         
         throw new Error(errorMessage);
@@ -1608,7 +1608,7 @@ export default function EVSimulatorPage() {
           <Alert variant="destructive" className="mt-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Cannot connect to backend at http://localhost:8000. Please ensure the Julia backend is running.
+              Cannot connect to backend at http://5.78.132.169:8000. Please ensure the Julia backend is running.
             </AlertDescription>
           </Alert>
         )}
