@@ -174,7 +174,7 @@ export default function EVSimulatorPage() {
   const [bonusGame1HouseEdge, setBonusGame1HouseEdge] = useState<number | null>(null);
   const [bonusGame1HouseEdgeLocked, setBonusGame1HouseEdgeLocked] = useState<boolean>(true);
   const [bonusGame1Risk, setBonusGame1Risk] = useState<RiskLevel>("medium");
-  const [bonusGame1DigitsType, setBonusGame1DigitsType] = useState<string>("0 & Under");
+  const [bonusGame1DigitsType, setBonusGame1DigitsType] = useState<string>("Exactly 0");
   
   // Bonus Game 2 state
   const [bonusGame2Enabled, setBonusGame2Enabled] = useState<boolean>(false);
@@ -190,7 +190,7 @@ export default function EVSimulatorPage() {
   const [bonusGame2HouseEdge, setBonusGame2HouseEdge] = useState<number | null>(null);
   const [bonusGame2HouseEdgeLocked, setBonusGame2HouseEdgeLocked] = useState<boolean>(true);
   const [bonusGame2Risk, setBonusGame2Risk] = useState<RiskLevel>("medium");
-  const [bonusGame2DigitsType, setBonusGame2DigitsType] = useState<string>("0 & Under");
+  const [bonusGame2DigitsType, setBonusGame2DigitsType] = useState<string>("Exactly 0");
 
   // Cashback bonus wagering state
   const [applyCashbackBonusPlay, setApplyCashbackBonusPlay] = useState<boolean>(true);
@@ -207,7 +207,7 @@ export default function EVSimulatorPage() {
   const [cashbackBonusGame1HouseEdge, setCashbackBonusGame1HouseEdge] = useState<number | null>(null);
   const [cashbackBonusGame1HouseEdgeLocked, setCashbackBonusGame1HouseEdgeLocked] = useState<boolean>(true);
   const [cashbackBonusGame1Risk, setCashbackBonusGame1Risk] = useState<RiskLevel>("medium");
-  const [cashbackBonusGame1DigitsType, setCashbackBonusGame1DigitsType] = useState<string>("0 & Under");
+  const [cashbackBonusGame1DigitsType, setCashbackBonusGame1DigitsType] = useState<string>("Exactly 0");
   
   // Cashback Bonus Game 2 state
   const [cashbackBonusGame2Enabled, setCashbackBonusGame2Enabled] = useState<boolean>(false);
@@ -223,7 +223,7 @@ export default function EVSimulatorPage() {
   const [cashbackBonusGame2HouseEdge, setCashbackBonusGame2HouseEdge] = useState<number | null>(null);
   const [cashbackBonusGame2HouseEdgeLocked, setCashbackBonusGame2HouseEdgeLocked] = useState<boolean>(true);
   const [cashbackBonusGame2Risk, setCashbackBonusGame2Risk] = useState<RiskLevel>("medium");
-  const [cashbackBonusGame2DigitsType, setCashbackBonusGame2DigitsType] = useState<string>("0 & Under");
+  const [cashbackBonusGame2DigitsType, setCashbackBonusGame2DigitsType] = useState<string>("Exactly 0");
   
   const [freespinsCount, setFreespinsCount] = useState<number>(0);
   const [freespinsBetSize, setFreespinsBetSize] = useState<number>(0);
@@ -240,7 +240,7 @@ export default function EVSimulatorPage() {
   const [game1Weighting, setGame1Weighting] = useState<number>(100.0);
   const [game1HouseEdge, setGame1HouseEdge] = useState<number | null>(null);
   const [game1HouseEdgeLocked, setGame1HouseEdgeLocked] = useState<boolean>(true);
-  const [game1DigitsType, setGame1DigitsType] = useState<string>("0 & Under");
+  const [game1DigitsType, setGame1DigitsType] = useState<string>("Exactly 0");
   const [game1Risk, setGame1Risk] = useState<RiskLevel | null>(null);
 
   // Game 2 state
@@ -256,7 +256,7 @@ export default function EVSimulatorPage() {
   const [switchBalanceMultiplier, setSwitchBalanceMultiplier] = useState<number>(4);
   const [game2HouseEdge, setGame2HouseEdge] = useState<number | null>(null);
   const [game2HouseEdgeLocked, setGame2HouseEdgeLocked] = useState<boolean>(true);
-  const [game2DigitsType, setGame2DigitsType] = useState<string>("0 & Under");
+  const [game2DigitsType, setGame2DigitsType] = useState<string>("Exactly 0");
   const [game2Risk, setGame2Risk] = useState<RiskLevel | null>(null);
 
   // Pre-coverplay state
@@ -269,7 +269,7 @@ export default function EVSimulatorPage() {
   const [preCoverplayRisk, setPreCoverplayRisk] = useState<RiskLevel | null>(null);
   const [preCoverplayHouseEdge, setPreCoverplayHouseEdge] = useState<number | null>(null);
   const [preCoverplayHouseEdgeLocked, setPreCoverplayHouseEdgeLocked] = useState<boolean>(true);
-  const [preCoverplayDigitsType, setPreCoverplayDigitsType] = useState<string>("0 & Under");
+  const [preCoverplayDigitsType, setPreCoverplayDigitsType] = useState<string>("Exactly 0");
 
   // Post-coverplay state
   const [postCoverplayEnabled, setPostCoverplayEnabled] = useState<boolean>(false);
@@ -281,7 +281,7 @@ export default function EVSimulatorPage() {
   const [postCoverplayRisk, setPostCoverplayRisk] = useState<RiskLevel | null>(null);
   const [postCoverplayHouseEdge, setPostCoverplayHouseEdge] = useState<number | null>(null);
   const [postCoverplayHouseEdgeLocked, setPostCoverplayHouseEdgeLocked] = useState<boolean>(true);
-  const [postCoverplayDigitsType, setPostCoverplayDigitsType] = useState<string>("0 & Under");
+  const [postCoverplayDigitsType, setPostCoverplayDigitsType] = useState<string>("Exactly 0");
 
   // Simulation parameters (removed - now using globalConfig.defaults.numSessions)
   const [randomSeed, setRandomSeed] = useState<number | null>(null);
@@ -496,7 +496,7 @@ export default function EVSimulatorPage() {
       return typeMap[gameName] || "";
     }
     if (category === "digits") {
-      return digitsType || game1DigitsType || "0 & Under"; // For digits, use the provided digits type or fallback
+      return digitsType || game1DigitsType || "Exactly 0"; // For digits, use the provided digits type or fallback
     }
     return ""; // blackjack and slots have no types
   };
@@ -525,8 +525,53 @@ export default function EVSimulatorPage() {
     return "bj"; // default
   };
 
-  // Generate digits options (0-100)
-  const digitsOptions = Array.from({ length: 101 }, (_, i) => `${i} & Under`);
+  // Digits: Separate arrays for Under and Over
+  const digitsUnderOptions = [
+    "Exactly 0",
+    ...Array.from({ length: 97 }, (_, i) => `${i + 1} & Under`)
+  ];
+  const digitsOverOptions = [
+    ...Array.from({ length: 97 }, (_, i) => `${i + 3} & Over`),
+    "Exactly 100"
+  ];
+
+  // Convert between Under and Over notations for Digits
+  const convertDigitsNotation = (value: string): string => {
+    // Handle "Exactly 0" and "Exactly 100"
+    if (value === "Exactly 0") {
+      return "Exactly 100";
+    }
+    if (value === "Exactly 100") {
+      return "Exactly 0";
+    }
+    
+    const match = value.match(/^(\d+)\s*&\s*(Under|Over)$/i);
+    if (!match) return value;
+    
+    const num = parseInt(match[1]);
+    const direction = match[2].toLowerCase();
+    const opposite = 100 - num;
+    
+    if (direction === "under") {
+      // Handle edge cases
+      if (opposite === 0) {
+        return "Exactly 100";
+      }
+      if (opposite === 100) {
+        return "Exactly 0";
+      }
+      return `${opposite} & Over`;
+    } else {
+      // Handle edge cases
+      if (opposite === 0) {
+        return "Exactly 100";
+      }
+      if (opposite === 100) {
+        return "Exactly 0";
+      }
+      return `${opposite} & Under`;
+    }
+  };
 
   // Get default game type for a category
   const getDefaultGameType = (category: GameCategory): string => {
@@ -542,7 +587,7 @@ export default function EVSimulatorPage() {
       case "slots":
         return "medium"; // Default risk level
       case "digits":
-        return "0 & Under";
+        return "Exactly 0";
       default:
         return "";
     }
@@ -641,7 +686,7 @@ export default function EVSimulatorPage() {
   useEffect(() => {
     if (game1Category === "digits") {
       setGame1Name("digits");
-      setGame1DigitsType(game1Type || "0 & Under");
+      setGame1DigitsType(game1Type || "Exactly 0");
     } else {
       const newName = getGameNameFromCategoryAndType(game1Category, game1Type);
       setGame1Name(newName);
@@ -660,7 +705,7 @@ export default function EVSimulatorPage() {
     const type = getGameTypeFromName(game1Name, category, game1DigitsType);
     setGame1Category(category);
     if (category === "digits") {
-      setGame1Type(game1DigitsType || "0 & Under");
+      setGame1Type(game1DigitsType || "Exactly 0");
     } else {
       setGame1Type(type);
     }
@@ -688,7 +733,7 @@ export default function EVSimulatorPage() {
   useEffect(() => {
     if (game2Category === "digits") {
       setGame2Name("digits");
-      setGame2DigitsType(game2Type || "0 & Under");
+      setGame2DigitsType(game2Type || "Exactly 0");
     } else {
       const newName = getGameNameFromCategoryAndType(game2Category, game2Type);
       setGame2Name(newName);
@@ -708,7 +753,7 @@ export default function EVSimulatorPage() {
     const type = getGameTypeFromName(game2Name, category, game2DigitsType);
     setGame2Category(category);
     if (category === "digits") {
-      setGame2Type(game2DigitsType || "0 & Under");
+      setGame2Type(game2DigitsType || "Exactly 0");
     } else {
       setGame2Type(type);
     }
@@ -744,7 +789,7 @@ export default function EVSimulatorPage() {
   useEffect(() => {
     if (bonusGame1Category === "digits") {
       setBonusGame1Name("digits");
-      setBonusGame1DigitsType(bonusGame1Type || "0 & Under");
+      setBonusGame1DigitsType(bonusGame1Type || "Exactly 0");
     } else {
       const newName = getGameNameFromCategoryAndType(bonusGame1Category, bonusGame1Type);
       setBonusGame1Name(newName);
@@ -764,7 +809,7 @@ export default function EVSimulatorPage() {
     const type = getGameTypeFromName(bonusGame1Name, category, bonusGame1DigitsType);
     setBonusGame1Category(category);
     if (category === "digits") {
-      setBonusGame1Type(bonusGame1DigitsType || "0 & Under");
+      setBonusGame1Type(bonusGame1DigitsType || "Exactly 0");
     } else {
       setBonusGame1Type(type);
     }
@@ -792,7 +837,7 @@ export default function EVSimulatorPage() {
   useEffect(() => {
     if (bonusGame2Category === "digits") {
       setBonusGame2Name("digits");
-      setBonusGame2DigitsType(bonusGame2Type || "0 & Under");
+      setBonusGame2DigitsType(bonusGame2Type || "Exactly 0");
     } else {
       const newName = getGameNameFromCategoryAndType(bonusGame2Category, bonusGame2Type);
       setBonusGame2Name(newName);
@@ -821,7 +866,7 @@ export default function EVSimulatorPage() {
   useEffect(() => {
     if (cashbackBonusGame1Category === "digits") {
       setCashbackBonusGame1Name("digits");
-      setCashbackBonusGame1DigitsType(cashbackBonusGame1Type || "0 & Under");
+      setCashbackBonusGame1DigitsType(cashbackBonusGame1Type || "Exactly 0");
     } else {
       const newName = getGameNameFromCategoryAndType(cashbackBonusGame1Category, cashbackBonusGame1Type);
       setCashbackBonusGame1Name(newName);
@@ -850,7 +895,7 @@ export default function EVSimulatorPage() {
   useEffect(() => {
     if (cashbackBonusGame2Category === "digits") {
       setCashbackBonusGame2Name("digits");
-      setCashbackBonusGame2DigitsType(cashbackBonusGame2Type || "0 & Under");
+      setCashbackBonusGame2DigitsType(cashbackBonusGame2Type || "Exactly 0");
     } else {
       const newName = getGameNameFromCategoryAndType(cashbackBonusGame2Category, cashbackBonusGame2Type);
       setCashbackBonusGame2Name(newName);
@@ -870,7 +915,7 @@ export default function EVSimulatorPage() {
     const type = getGameTypeFromName(bonusGame2Name, category, bonusGame2DigitsType);
     setBonusGame2Category(category);
     if (category === "digits") {
-      setBonusGame2Type(bonusGame2DigitsType || "0 & Under");
+      setBonusGame2Type(bonusGame2DigitsType || "Exactly 0");
     } else {
       setBonusGame2Type(type);
     }
@@ -1122,7 +1167,7 @@ export default function EVSimulatorPage() {
   useEffect(() => {
     if (preCoverplayCategory === "digits") {
       setPreCoverplayGame("digits");
-      setPreCoverplayDigitsType(preCoverplayType || "0 & Under");
+      setPreCoverplayDigitsType(preCoverplayType || "Exactly 0");
     } else {
       const newName = getGameNameFromCategoryAndType(preCoverplayCategory, preCoverplayType);
       setPreCoverplayGame(newName);
@@ -1142,7 +1187,7 @@ export default function EVSimulatorPage() {
     const type = getGameTypeFromName(preCoverplayGame, category, preCoverplayDigitsType);
     setPreCoverplayCategory(category);
     if (category === "digits") {
-      setPreCoverplayType(preCoverplayDigitsType || "0 & Under");
+      setPreCoverplayType(preCoverplayDigitsType || "Exactly 0");
     } else {
       setPreCoverplayType(type);
     }
@@ -1170,7 +1215,7 @@ export default function EVSimulatorPage() {
   useEffect(() => {
     if (postCoverplayCategory === "digits") {
       setPostCoverplayGame("digits");
-      setPostCoverplayDigitsType(postCoverplayType || "0 & Under");
+      setPostCoverplayDigitsType(postCoverplayType || "Exactly 0");
     } else {
       const newName = getGameNameFromCategoryAndType(postCoverplayCategory, postCoverplayType);
       setPostCoverplayGame(newName);
@@ -1190,7 +1235,7 @@ export default function EVSimulatorPage() {
     const type = getGameTypeFromName(postCoverplayGame, category, postCoverplayDigitsType);
     setPostCoverplayCategory(category);
     if (category === "digits") {
-      setPostCoverplayType(postCoverplayDigitsType || "0 & Under");
+      setPostCoverplayType(postCoverplayDigitsType || "Exactly 0");
     } else {
       setPostCoverplayType(type);
     }
@@ -1959,7 +2004,7 @@ export default function EVSimulatorPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="game1Type">
-                  {game1Category === "slots" ? "Risk Level" : "Selection"}
+                  {game1Category === "slots" ? "Risk Level" : game1Category === "digits" ? "" : "Selection"}
                 </Label>
                 {(game1Category === "european_roulette" || game1Category === "american_roulette" || game1Category === "french_roulette") && (
                   <Select value={game1Type} onValueChange={setGame1Type}>
@@ -2016,18 +2061,44 @@ export default function EVSimulatorPage() {
                   </Select>
                 )}
                 {game1Category === "digits" && (
-                  <Select value={game1Type} onValueChange={setGame1Type}>
-                    <SelectTrigger id="game1Type">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {digitsOptions.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-2 gap-2 items-end">
+                    <div>
+                      <Label htmlFor="game1DigitsUnder">Under</Label>
+                      <Select 
+                        value={(game1Type.includes("Under") || game1Type === "Exactly 0") ? game1Type : convertDigitsNotation(game1Type)} 
+                        onValueChange={(value) => setGame1Type(value)}
+                      >
+                        <SelectTrigger id="game1DigitsUnder">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {digitsUnderOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="game1DigitsOver">Over</Label>
+                      <Select 
+                        value={(game1Type.includes("Over") || game1Type === "Exactly 100") ? game1Type : convertDigitsNotation(game1Type)} 
+                        onValueChange={(value) => setGame1Type(value)}
+                      >
+                        <SelectTrigger id="game1DigitsOver">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {digitsOverOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -2338,7 +2409,7 @@ export default function EVSimulatorPage() {
 
                     <div className="space-y-2">
                       <Label htmlFor="game2Type">
-                        {game2Category === "slots" ? "Risk Level" : "Selection"}
+                        {game2Category === "slots" ? "Risk Level" : game2Category === "digits" ? "" : "Selection"}
                       </Label>
                       {(game2Category === "european_roulette" || game2Category === "american_roulette" || game2Category === "french_roulette") && (
                         <Select value={game2Type} onValueChange={setGame2Type}>
@@ -2395,18 +2466,44 @@ export default function EVSimulatorPage() {
                         </Select>
                       )}
                       {game2Category === "digits" && (
-                        <Select value={game2Type} onValueChange={setGame2Type}>
-                          <SelectTrigger id="game2Type">
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {digitsOptions.map((option) => (
-                              <SelectItem key={option} value={option}>
-                                {option}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="grid grid-cols-2 gap-2 items-end">
+                          <div>
+                            <Label htmlFor="game2DigitsUnder">Under</Label>
+                            <Select 
+                              value={(game2Type.includes("Under") || game2Type === "Exactly 0") ? game2Type : convertDigitsNotation(game2Type)} 
+                              onValueChange={(value) => setGame2Type(value)}
+                            >
+                              <SelectTrigger id="game2DigitsUnder">
+                                <SelectValue placeholder="Select" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {digitsUnderOptions.map((option) => (
+                                  <SelectItem key={option} value={option}>
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="game2DigitsOver">Over</Label>
+                            <Select 
+                              value={(game2Type.includes("Over") || game2Type === "Exactly 100") ? game2Type : convertDigitsNotation(game2Type)} 
+                              onValueChange={(value) => setGame2Type(value)}
+                            >
+                              <SelectTrigger id="game2DigitsOver">
+                                <SelectValue placeholder="Select" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {digitsOverOptions.map((option) => (
+                                  <SelectItem key={option} value={option}>
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -2599,7 +2696,7 @@ export default function EVSimulatorPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="bonusGame1Type">
-                      {bonusGame1Category === "slots" ? "Risk Level" : "Selection"}
+                      {bonusGame1Category === "slots" ? "Risk Level" : bonusGame1Category === "digits" ? "" : "Selection"}
                     </Label>
                     {(bonusGame1Category === "european_roulette" || bonusGame1Category === "american_roulette" || bonusGame1Category === "french_roulette") && (
                       <Select value={bonusGame1Type} onValueChange={setBonusGame1Type}>
@@ -2656,18 +2753,44 @@ export default function EVSimulatorPage() {
                       </Select>
                     )}
                     {bonusGame1Category === "digits" && (
-                      <Select value={bonusGame1Type} onValueChange={setBonusGame1Type}>
-                        <SelectTrigger id="bonusGame1Type">
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {digitsOptions.map((option) => (
-                            <SelectItem key={option} value={option}>
-                              {option}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="grid grid-cols-2 gap-2 items-end">
+                        <div>
+                          <Label htmlFor="bonusGame1DigitsUnder">Under</Label>
+                          <Select 
+                            value={(bonusGame1Type.includes("Under") || bonusGame1Type === "Exactly 0") ? bonusGame1Type : convertDigitsNotation(bonusGame1Type)} 
+                            onValueChange={(value) => setBonusGame1Type(value)}
+                          >
+                            <SelectTrigger id="bonusGame1DigitsUnder">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {digitsUnderOptions.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="bonusGame1DigitsOver">Over</Label>
+                          <Select 
+                            value={(bonusGame1Type.includes("Over") || bonusGame1Type === "Exactly 100") ? bonusGame1Type : convertDigitsNotation(bonusGame1Type)} 
+                            onValueChange={(value) => setBonusGame1Type(value)}
+                          >
+                            <SelectTrigger id="bonusGame1DigitsOver">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {digitsOverOptions.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -2807,7 +2930,7 @@ export default function EVSimulatorPage() {
 
                     <div className="space-y-2">
                       <Label htmlFor="bonusGame2Type">
-                        {bonusGame2Category === "slots" ? "Risk Level" : "Selection"}
+                        {bonusGame2Category === "slots" ? "Risk Level" : bonusGame2Category === "digits" ? "" : "Selection"}
                       </Label>
                       {(bonusGame2Category === "european_roulette" || bonusGame2Category === "american_roulette" || bonusGame2Category === "french_roulette") && (
                         <Select value={bonusGame2Type} onValueChange={setBonusGame2Type}>
@@ -2864,18 +2987,44 @@ export default function EVSimulatorPage() {
                         </Select>
                       )}
                       {bonusGame2Category === "digits" && (
-                        <Select value={bonusGame2Type} onValueChange={setBonusGame2Type}>
-                          <SelectTrigger id="bonusGame2Type">
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {digitsOptions.map((option) => (
-                              <SelectItem key={option} value={option}>
-                                {option}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="grid grid-cols-2 gap-2 items-end">
+                          <div>
+                            <Label htmlFor="bonusGame2DigitsUnder">Under</Label>
+                            <Select 
+                              value={(bonusGame2Type.includes("Under") || bonusGame2Type === "Exactly 0") ? bonusGame2Type : convertDigitsNotation(bonusGame2Type)} 
+                              onValueChange={(value) => setBonusGame2Type(value)}
+                            >
+                              <SelectTrigger id="bonusGame2DigitsUnder">
+                                <SelectValue placeholder="Select" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {digitsUnderOptions.map((option) => (
+                                  <SelectItem key={option} value={option}>
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="bonusGame2DigitsOver">Over</Label>
+                            <Select 
+                              value={(bonusGame2Type.includes("Over") || bonusGame2Type === "Exactly 100") ? bonusGame2Type : convertDigitsNotation(bonusGame2Type)} 
+                              onValueChange={(value) => setBonusGame2Type(value)}
+                            >
+                              <SelectTrigger id="bonusGame2DigitsOver">
+                                <SelectValue placeholder="Select" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {digitsOverOptions.map((option) => (
+                                  <SelectItem key={option} value={option}>
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -3068,7 +3217,7 @@ export default function EVSimulatorPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="cashbackBonusGame1Type">
-                      {cashbackBonusGame1Category === "slots" ? "Risk Level" : "Selection"}
+                      {cashbackBonusGame1Category === "slots" ? "Risk Level" : cashbackBonusGame1Category === "digits" ? "" : "Selection"}
                     </Label>
                     {(cashbackBonusGame1Category === "european_roulette" || cashbackBonusGame1Category === "american_roulette" || cashbackBonusGame1Category === "french_roulette") && (
                       <Select value={cashbackBonusGame1Type} onValueChange={setCashbackBonusGame1Type}>
@@ -3125,18 +3274,44 @@ export default function EVSimulatorPage() {
                       </Select>
                     )}
                     {cashbackBonusGame1Category === "digits" && (
-                      <Select value={cashbackBonusGame1Type} onValueChange={setCashbackBonusGame1Type}>
-                        <SelectTrigger id="cashbackBonusGame1Type">
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {digitsOptions.map((option) => (
-                            <SelectItem key={option} value={option}>
-                              {option}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="grid grid-cols-2 gap-2 items-end">
+                        <div>
+                          <Label htmlFor="cashbackBonusGame1DigitsUnder">Under</Label>
+                          <Select 
+                            value={(cashbackBonusGame1Type.includes("Under") || cashbackBonusGame1Type === "Exactly 0") ? cashbackBonusGame1Type : convertDigitsNotation(cashbackBonusGame1Type)} 
+                            onValueChange={(value) => setCashbackBonusGame1Type(value)}
+                          >
+                            <SelectTrigger id="cashbackBonusGame1DigitsUnder">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {digitsUnderOptions.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="cashbackBonusGame1DigitsOver">Over</Label>
+                          <Select 
+                            value={(cashbackBonusGame1Type.includes("Over") || cashbackBonusGame1Type === "Exactly 100") ? cashbackBonusGame1Type : convertDigitsNotation(cashbackBonusGame1Type)} 
+                            onValueChange={(value) => setCashbackBonusGame1Type(value)}
+                          >
+                            <SelectTrigger id="cashbackBonusGame1DigitsOver">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {digitsOverOptions.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -3276,7 +3451,7 @@ export default function EVSimulatorPage() {
 
                     <div className="space-y-2">
                       <Label htmlFor="cashbackBonusGame2Type">
-                        {cashbackBonusGame2Category === "slots" ? "Risk Level" : "Selection"}
+                        {cashbackBonusGame2Category === "slots" ? "Risk Level" : cashbackBonusGame2Category === "digits" ? "" : "Selection"}
                       </Label>
                       {(cashbackBonusGame2Category === "european_roulette" || cashbackBonusGame2Category === "american_roulette" || cashbackBonusGame2Category === "french_roulette") && (
                         <Select value={cashbackBonusGame2Type} onValueChange={setCashbackBonusGame2Type}>
@@ -3333,18 +3508,44 @@ export default function EVSimulatorPage() {
                         </Select>
                       )}
                       {cashbackBonusGame2Category === "digits" && (
-                        <Select value={cashbackBonusGame2Type} onValueChange={setCashbackBonusGame2Type}>
-                          <SelectTrigger id="cashbackBonusGame2Type">
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {digitsOptions.map((option) => (
-                              <SelectItem key={option} value={option}>
-                                {option}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="grid grid-cols-2 gap-2 items-end">
+                          <div>
+                            <Label htmlFor="cashbackBonusGame2DigitsUnder">Under</Label>
+                            <Select 
+                              value={(cashbackBonusGame2Type.includes("Under") || cashbackBonusGame2Type === "Exactly 0") ? cashbackBonusGame2Type : convertDigitsNotation(cashbackBonusGame2Type)} 
+                              onValueChange={(value) => setCashbackBonusGame2Type(value)}
+                            >
+                              <SelectTrigger id="cashbackBonusGame2DigitsUnder">
+                                <SelectValue placeholder="Select" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {digitsUnderOptions.map((option) => (
+                                  <SelectItem key={option} value={option}>
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="cashbackBonusGame2DigitsOver">Over</Label>
+                            <Select 
+                              value={(cashbackBonusGame2Type.includes("Over") || cashbackBonusGame2Type === "Exactly 100") ? cashbackBonusGame2Type : convertDigitsNotation(cashbackBonusGame2Type)} 
+                              onValueChange={(value) => setCashbackBonusGame2Type(value)}
+                            >
+                              <SelectTrigger id="cashbackBonusGame2DigitsOver">
+                                <SelectValue placeholder="Select" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {digitsOverOptions.map((option) => (
+                                  <SelectItem key={option} value={option}>
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -3562,7 +3763,7 @@ export default function EVSimulatorPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="preCoverplayType">
-                  {preCoverplayCategory === "slots" ? "Risk Level" : "Selection"}
+                  {preCoverplayCategory === "slots" ? "Risk Level" : preCoverplayCategory === "digits" ? "" : "Selection"}
                 </Label>
                 {(preCoverplayCategory === "european_roulette" || preCoverplayCategory === "american_roulette" || preCoverplayCategory === "french_roulette") && (
                   <Select value={preCoverplayType} onValueChange={setPreCoverplayType}>
@@ -3619,18 +3820,44 @@ export default function EVSimulatorPage() {
                   </Select>
                 )}
                 {preCoverplayCategory === "digits" && (
-                  <Select value={preCoverplayType} onValueChange={setPreCoverplayType}>
-                    <SelectTrigger id="preCoverplayType">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {digitsOptions.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-2 gap-2 items-end">
+                    <div>
+                      <Label htmlFor="preCoverplayDigitsUnder">Under</Label>
+                      <Select 
+                        value={(preCoverplayType.includes("Under") || preCoverplayType === "Exactly 0") ? preCoverplayType : convertDigitsNotation(preCoverplayType)} 
+                        onValueChange={(value) => setPreCoverplayType(value)}
+                      >
+                        <SelectTrigger id="preCoverplayDigitsUnder">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {digitsUnderOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="preCoverplayDigitsOver">Over</Label>
+                      <Select 
+                        value={(preCoverplayType.includes("Over") || preCoverplayType === "Exactly 100") ? preCoverplayType : convertDigitsNotation(preCoverplayType)} 
+                        onValueChange={(value) => setPreCoverplayType(value)}
+                      >
+                        <SelectTrigger id="preCoverplayDigitsOver">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {digitsOverOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -3766,7 +3993,7 @@ export default function EVSimulatorPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="postCoverplayType">
-                  {postCoverplayCategory === "slots" ? "Risk Level" : "Selection"}
+                  {postCoverplayCategory === "slots" ? "Risk Level" : postCoverplayCategory === "digits" ? "" : "Selection"}
                 </Label>
                 {(postCoverplayCategory === "european_roulette" || postCoverplayCategory === "american_roulette" || postCoverplayCategory === "french_roulette") && (
                   <Select value={postCoverplayType} onValueChange={setPostCoverplayType}>
@@ -3823,18 +4050,44 @@ export default function EVSimulatorPage() {
                   </Select>
                 )}
                 {postCoverplayCategory === "digits" && (
-                  <Select value={postCoverplayType} onValueChange={setPostCoverplayType}>
-                    <SelectTrigger id="postCoverplayType">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {digitsOptions.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-2 gap-2 items-end">
+                    <div>
+                      <Label htmlFor="postCoverplayDigitsUnder">Under</Label>
+                      <Select 
+                        value={(postCoverplayType.includes("Under") || postCoverplayType === "Exactly 0") ? postCoverplayType : convertDigitsNotation(postCoverplayType)} 
+                        onValueChange={(value) => setPostCoverplayType(value)}
+                      >
+                        <SelectTrigger id="postCoverplayDigitsUnder">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {digitsUnderOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="postCoverplayDigitsOver">Over</Label>
+                      <Select 
+                        value={(postCoverplayType.includes("Over") || postCoverplayType === "Exactly 100") ? postCoverplayType : convertDigitsNotation(postCoverplayType)} 
+                        onValueChange={(value) => setPostCoverplayType(value)}
+                      >
+                        <SelectTrigger id="postCoverplayDigitsOver">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {digitsOverOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
