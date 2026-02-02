@@ -1296,7 +1296,7 @@ export default function EVSimulatorPage() {
         bonus_amount: bonusAmount,
       };
 
-      if (bonusType !== "freespins") {
+      if (bonusType !== "freespins" && bonusType !== "cashback") {
         bonusConfig.wagering = wagering;
       }
 
@@ -1709,7 +1709,7 @@ export default function EVSimulatorPage() {
                   </div>
                 )}
 
-                {bonusType !== "freespins" && (
+                {bonusType !== "freespins" && bonusType !== "cashback" && (
                   <div className="space-y-2">
                     <Label htmlFor="wagering">Wagering Requirement ($)</Label>
                     <Input
