@@ -649,9 +649,9 @@ export default function EVSimulatorPage() {
       case "french_12s":
         return 2.703;
       case "baccarat_player":
-        return 1.060;
+        return 1.235;
       case "baccarat_banker":
-        return 1.050;
+        return 1.058;
       case "baccarat_tie":
         return 14.360;
       case "slots":

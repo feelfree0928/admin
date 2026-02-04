@@ -14,8 +14,8 @@
       "french_roulette_standard": 2.703,
       "french_roulette_18s": 1.351,
       "blackjack": 0.46,
-      "baccarat_player": 1.06,
-      "baccarat_banker": 1.05,
+      "baccarat_player": 1.235,
+      "baccarat_banker": 1.058,
       "baccarat_tie": 14.36,
       "slots": 3,
       "digits": null
