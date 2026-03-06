@@ -88,7 +88,7 @@ export function SettingsModal({ open, onOpenChange, currentConfig, onConfigUpdat
     setError(null);
 
     try {
-      const response = await fetch('/api/config', {
+      const response = await fetch('http://5.78.132.169:8000/api/config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

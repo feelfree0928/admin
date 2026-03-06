@@ -145,7 +145,7 @@ export default function EVSimulatorPage() {
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const response = await fetch("/api/config");
+        const response = await fetch("http://5.78.132.169:8000/api/config");
         const data = await response.json();
         if (data.success && data.config) setGlobalConfig(data.config);
       } catch (err) {
@@ -834,7 +834,7 @@ export default function EVSimulatorPage() {
         onConfigUpdate={() => {
           const loadConfig = async () => {
             try {
-              const response = await fetch("/api/config");
+              const response = await fetch("http://5.78.132.169:8000/api/config");
               const data = await response.json();
               if (data.success && data.config) setGlobalConfig(data.config);
             } catch (err) {
