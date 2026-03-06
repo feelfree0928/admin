@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, AlertCircle, CheckCircle2, XCircle, Settings } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2, XCircle, Settings, Lock, LockOpen } from "lucide-react";
 import { SettingsModal } from "@/components/SettingsModal";
 import { BonusConfigPanel } from "@/components/BonusConfigPanel";
 import { GameConfigPanel } from "@/components/GameConfigPanel";
@@ -114,6 +114,12 @@ export default function EVSimulatorPage() {
   const [backendStatus, setBackendStatus] = useState<"checking" | "online" | "offline">("checking");
   const [globalConfig, setGlobalConfig] = useState<any>(null);
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
+  const [customSimCount, setCustomSimCount] = useState<string>("");
+  const [simCountLocked, setSimCountLocked] = useState<boolean>(true);
+
+  const effectiveSimCount = simCountLocked
+    ? (globalConfig?.defaults?.numSessions ?? 1000000)
+    : (parseInt(customSimCount, 10) || (globalConfig?.defaults?.numSessions ?? 1000000));
 
   // ---------------------------------------------------------------------------
   // Backend status + config
@@ -426,7 +432,7 @@ export default function EVSimulatorPage() {
         bonus: bonusConfig,
         game1: game1Config,
         simulation: {
-          num_sessions: globalConfig?.defaults?.numSessions ?? 1000000,
+          num_sessions: effectiveSimCount,
           random_seed: randomSeed,
         },
       };
@@ -808,8 +814,37 @@ export default function EVSimulatorPage() {
         )}
       </div>
 
-      {/* Submit */}
-      <div className="mb-6">
+      {/* Simulations + Submit */}
+      <div className="mb-6 space-y-3">
+        <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/30">
+          <Label className="text-sm font-medium whitespace-nowrap">Simulations</Label>
+          <Input
+            type="number"
+            disabled={simCountLocked}
+            value={simCountLocked
+              ? String(globalConfig?.defaults?.numSessions ?? 1000000)
+              : customSimCount}
+            onChange={(e) => setCustomSimCount(e.target.value)}
+            className="w-40 text-right"
+            min={1000}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (!simCountLocked) setCustomSimCount("");
+              setSimCountLocked((prev) => !prev);
+            }}
+          >
+            {simCountLocked ? <Lock className="h-4 w-4" /> : <LockOpen className="h-4 w-4" />}
+            <span className="ml-1 text-xs">{simCountLocked ? "Locked" : "Custom"}</span>
+          </Button>
+          {!simCountLocked && (
+            <span className="text-xs text-muted-foreground">
+              Default: {(globalConfig?.defaults?.numSessions ?? 1000000).toLocaleString()}
+            </span>
+          )}
+        </div>
         <Button onClick={handleSubmit} disabled={loading} className="w-full" size="lg">
           {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Running Simulation...</> : "Run Simulation"}
         </Button>
