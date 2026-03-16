@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, AlertCircle, CheckCircle2, XCircle, Settings, Lock, LockOpen } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2, XCircle, Settings, Lock, LockOpen, ClipboardList } from "lucide-react";
 import { SettingsModal } from "@/components/SettingsModal";
 import { BonusConfigPanel } from "@/components/BonusConfigPanel";
 import { GameConfigPanel } from "@/components/GameConfigPanel";
@@ -36,6 +37,8 @@ import type {
 // ============================================================================
 
 export default function EVSimulatorPage() {
+  const router = useRouter();
+
   // ---------------------------------------------------------------------------
   // Bonus state
   // ---------------------------------------------------------------------------
@@ -126,7 +129,7 @@ export default function EVSimulatorPage() {
   // ---------------------------------------------------------------------------
   const testBackendConnection = async (): Promise<boolean> => {
     try {
-      const response = await fetch("http://5.78.132.169:8000/health");
+      const response = await fetch("http://localhost:8000/health");
       if (response.ok) {
         const data = await response.json();
         return data.status === "healthy";
@@ -151,7 +154,7 @@ export default function EVSimulatorPage() {
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const response = await fetch("http://5.78.132.169:8000/api/config");
+        const response = await fetch("http://localhost:8000/api/config");
         const data = await response.json();
         if (data.success && data.config) setGlobalConfig(data.config);
       } catch (err) {
@@ -495,7 +498,7 @@ export default function EVSimulatorPage() {
         }
       }
 
-      const response = await fetch("http://5.78.132.169:8000/api/simulate", {
+      const response = await fetch("http://localhost:8000/api/simulate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(request),
@@ -511,7 +514,7 @@ export default function EVSimulatorPage() {
           errorMessage = text || errorMessage;
         }
         if (response.status === 404)
-          errorMessage += ". Is the backend running on http://5.78.132.169:8000?";
+          errorMessage += ". Is the backend running on http://localhost:8000?";
         throw new Error(errorMessage);
       }
 
@@ -620,7 +623,10 @@ export default function EVSimulatorPage() {
             {backendStatus === "offline" && (
               <Badge variant="destructive" className="gap-2"><XCircle className="h-3 w-3" />Backend Offline</Badge>
             )}
-            <Button variant="outline" size="icon" onClick={() => setShowSettingsModal(true)} title="Global Settings" className="ml-2">
+            <Button variant="outline" size="icon" onClick={() => router.push("/ev-simulator/log")} title="View Logs">
+              <ClipboardList className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => setShowSettingsModal(true)} title="Global Settings">
               <Settings className="h-4 w-4" />
             </Button>
           </div>
@@ -628,7 +634,7 @@ export default function EVSimulatorPage() {
         {backendStatus === "offline" && (
           <Alert variant="destructive" className="mt-4">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Cannot connect to backend at http://5.78.132.169:8000. Please ensure the Julia backend is running.</AlertDescription>
+            <AlertDescription>Cannot connect to backend at http://localhost:8000. Please ensure the Julia backend is running.</AlertDescription>
           </Alert>
         )}
       </div>
@@ -869,7 +875,7 @@ export default function EVSimulatorPage() {
         onConfigUpdate={() => {
           const loadConfig = async () => {
             try {
-              const response = await fetch("http://5.78.132.169:8000/api/config");
+              const response = await fetch("http://localhost:8000/api/config");
               const data = await response.json();
               if (data.success && data.config) setGlobalConfig(data.config);
             } catch (err) {
