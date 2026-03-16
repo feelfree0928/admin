@@ -129,7 +129,7 @@ export default function EVSimulatorPage() {
   // ---------------------------------------------------------------------------
   const testBackendConnection = async (): Promise<boolean> => {
     try {
-      const response = await fetch("http://localhost:8000/health");
+      const response = await fetch("http://5.78.132.169:8000/health");
       if (response.ok) {
         const data = await response.json();
         return data.status === "healthy";
@@ -154,7 +154,7 @@ export default function EVSimulatorPage() {
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const response = await fetch("http://localhost:8000/api/config");
+        const response = await fetch("http://5.78.132.169:8000/api/config");
         const data = await response.json();
         if (data.success && data.config) setGlobalConfig(data.config);
       } catch (err) {
@@ -498,7 +498,7 @@ export default function EVSimulatorPage() {
         }
       }
 
-      const response = await fetch("http://localhost:8000/api/simulate", {
+      const response = await fetch("http://5.78.132.169:8000/api/simulate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(request),
@@ -514,7 +514,7 @@ export default function EVSimulatorPage() {
           errorMessage = text || errorMessage;
         }
         if (response.status === 404)
-          errorMessage += ". Is the backend running on http://localhost:8000?";
+          errorMessage += ". Is the backend running on http://5.78.132.169:8000?";
         throw new Error(errorMessage);
       }
 
@@ -634,7 +634,7 @@ export default function EVSimulatorPage() {
         {backendStatus === "offline" && (
           <Alert variant="destructive" className="mt-4">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Cannot connect to backend at http://localhost:8000. Please ensure the Julia backend is running.</AlertDescription>
+            <AlertDescription>Cannot connect to backend at http://5.78.132.169:8000. Please ensure the Julia backend is running.</AlertDescription>
           </Alert>
         )}
       </div>
@@ -875,7 +875,7 @@ export default function EVSimulatorPage() {
         onConfigUpdate={() => {
           const loadConfig = async () => {
             try {
-              const response = await fetch("http://localhost:8000/api/config");
+              const response = await fetch("http://5.78.132.169:8000/api/config");
               const data = await response.json();
               if (data.success && data.config) setGlobalConfig(data.config);
             } catch (err) {
