@@ -22,7 +22,7 @@ import {
 import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import * as XLSX from "xlsx";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = "http://5.78.132.169:8000";
 
 export interface SimulationLogEntry {
   id?: string;
