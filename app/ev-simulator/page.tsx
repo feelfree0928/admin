@@ -119,6 +119,9 @@ export default function EVSimulatorPage() {
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
   const [customSimCount, setCustomSimCount] = useState<string>("");
   const [simCountLocked, setSimCountLocked] = useState<boolean>(true);
+  const [playerProfitEnabled, setPlayerProfitEnabled] = useState<boolean>(false);
+  const [playerBaseProfit, setPlayerBaseProfit] = useState<number>(5);
+  const [playerBonusPct, setPlayerBonusPct] = useState<number>(1);
 
   const effectiveSimCount = simCountLocked
     ? (globalConfig?.defaults?.numSessions ?? 1000000)
@@ -437,6 +440,11 @@ export default function EVSimulatorPage() {
         simulation: {
           num_sessions: effectiveSimCount,
           random_seed: randomSeed,
+          ...(playerProfitEnabled && {
+            player_profit_enabled: true,
+            player_base_profit: playerBaseProfit,
+            player_bonus_pct: playerBonusPct / 100,
+          }),
         },
       };
 
@@ -851,6 +859,48 @@ export default function EVSimulatorPage() {
             </span>
           )}
         </div>
+        {/* Player Profit row */}
+        <div className="flex flex-wrap items-center gap-3 p-3 border rounded-md bg-muted/30">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="playerProfitEnabled"
+              checked={playerProfitEnabled}
+              onCheckedChange={(v) => setPlayerProfitEnabled(!!v)}
+            />
+            <Label htmlFor="playerProfitEnabled" className="text-sm font-medium whitespace-nowrap cursor-pointer">
+              Player Profit
+            </Label>
+          </div>
+          {playerProfitEnabled && (
+            <>
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">Base $</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={playerBaseProfit}
+                  onChange={(e) => setPlayerBaseProfit(parseFloat(e.target.value) || 0)}
+                  className="w-24 text-right"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">Bonus %</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  value={playerBonusPct}
+                  onChange={(e) => setPlayerBonusPct(parseFloat(e.target.value) || 0)}
+                  className="w-20 text-right"
+                />
+                <span className="text-xs text-muted-foreground">of profit on wins</span>
+              </div>
+            </>
+          )}
+        </div>
+
         <Button onClick={handleSubmit} disabled={loading} className="w-full" size="lg">
           {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Running Simulation...</> : "Run Simulation"}
         </Button>

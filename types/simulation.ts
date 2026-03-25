@@ -100,6 +100,9 @@ export interface SimulationRequest {
     num_sessions: number;
     random_seed?: number | null;
     precision?: number;
+    player_profit_enabled?: boolean;
+    player_base_profit?: number;
+    player_bonus_pct?: number;
   };
   optimization?: {
     target_bust_rate: number;
