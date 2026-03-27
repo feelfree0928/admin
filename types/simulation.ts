@@ -135,6 +135,9 @@ export interface SimulationResults {
     win_50_percent: number;
     win_100_percent: number;
   };
+  player_base_profit?: number;
+  average_player_share?: number;
+  player_share_pct?: number;
 }
 
 export interface ApiResponse {

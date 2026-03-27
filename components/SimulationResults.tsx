@@ -84,8 +84,8 @@ export function SimulationResults({
         />
         <StatCard
           title="Base Profit"
-          value={formatCurrency(baseProfit)}
-          subtitle={`Based on ${baseProfitMethod}`}
+          value={formatCurrency(r.player_base_profit !== undefined ? r.player_base_profit : baseProfit)}
+          subtitle={r.player_base_profit !== undefined ? "Player profit setting" : `Based on ${baseProfitMethod}`}
         />
         <StatCard
           title="Bust Rate"
@@ -165,6 +165,18 @@ export function SimulationResults({
               <span className="text-sm text-muted-foreground">Execution Time</span>
               <span className="font-medium">{results.execution_time_ms.toFixed(2)}ms</span>
             </div>
+            {r.average_player_share !== undefined && (
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="text-sm text-muted-foreground">Average Player Share</span>
+                <span className="font-medium">{formatCurrency(r.average_player_share)}</span>
+              </div>
+            )}
+            {r.player_share_pct !== undefined && (
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="text-sm text-muted-foreground">Player %</span>
+                <span className="font-medium">{formatPercentage(r.player_share_pct)}</span>
+              </div>
+            )}
           </div>
 
           {/* Risk Analysis */}
