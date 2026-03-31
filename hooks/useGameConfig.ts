@@ -16,6 +16,10 @@ export interface GameConfig {
   setType: (t: string) => void;
   betSize: number;
   setBetSize: (n: number) => void;
+  betSizeMode: "fixed" | "target_bust_rate";
+  setBetSizeMode: (m: "fixed" | "target_bust_rate") => void;
+  targetBustRate: number;
+  setTargetBustRate: (n: number) => void;
   timePerBet: number;
   setTimePerBet: (n: number) => void;
   contribution: number;
@@ -53,6 +57,8 @@ export function useGameConfig({
   );
   const [type, setType] = useState<string>("");
   const [betSize, setBetSize] = useState<number>(initialBetSize);
+  const [betSizeMode, setBetSizeMode] = useState<"fixed" | "target_bust_rate">("fixed");
+  const [targetBustRate, setTargetBustRate] = useState<number>(90);
   const [timePerBet, setTimePerBet] = useState<number>(initialTimePerBet);
   const [contribution, setContribution] = useState<number>(initialContribution);
   const [houseEdge, setHouseEdge] = useState<number | null>(null);
@@ -115,6 +121,10 @@ export function useGameConfig({
     setType,
     betSize,
     setBetSize,
+    betSizeMode,
+    setBetSizeMode,
+    targetBustRate,
+    setTargetBustRate,
     timePerBet,
     setTimePerBet,
     contribution,

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -114,6 +114,7 @@ export default function EVSimulatorPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<ApiResponse | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [backendStatus, setBackendStatus] = useState<"checking" | "online" | "offline">("checking");
   const [globalConfig, setGlobalConfig] = useState<any>(null);
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
@@ -299,7 +300,7 @@ export default function EVSimulatorPage() {
     if ((bonusType === "postwager" || bonusType === "cashback") && deposit <= 0)
       return "Deposit must be greater than 0";
     if (bonusType !== "raw" && bonusAmount < 0) return "Bonus amount cannot be negative";
-    if (game1.betSize <= 0) return "Game 1 bet size must be greater than 0";
+    if (game1.betSizeMode === "fixed" && game1.betSize <= 0) return "Game 1 bet size must be greater than 0";
     if (game2Enabled && game2.betSize <= 0) return "Game 2 bet size must be greater than 0";
     if (game1.name === "digits" && !game1.digitsType)
       return "Digits type is required for Digits game (e.g., '10 & Under')";
@@ -384,9 +385,11 @@ export default function EVSimulatorPage() {
         }
       }
 
+      const isTargetBustRate = game1.betSizeMode === "target_bust_rate";
+
       const game1Config: GameConfig = {
         name: game1.name,
-        bet_size: game1.betSize,
+        bet_size: isTargetBustRate ? 1.0 : game1.betSize,
         time_per_bet: game1.timePerBet,
         game_weighting: game1Weighting,
       };
@@ -432,7 +435,7 @@ export default function EVSimulatorPage() {
         if (postCoverplay.houseEdge !== null) postCoverplayConfig.house_edge = postCoverplay.houseEdge;
       }
 
-      const mode: SimulationMode = game2Enabled ? "two_tier" : "standard";
+      const mode: SimulationMode = isTargetBustRate ? "optimal" : (game2Enabled ? "two_tier" : "standard");
       const request: SimulationRequest = {
         mode,
         bonus: bonusConfig,
@@ -447,6 +450,10 @@ export default function EVSimulatorPage() {
           }),
         },
       };
+
+      if (isTargetBustRate) {
+        request.optimization = { target_bust_rate: game1.targetBustRate };
+      }
 
       if (game2Config) request.game2 = game2Config;
       if (preCoverplayConfig) request.pre_coverplay = preCoverplayConfig;
@@ -506,10 +513,14 @@ export default function EVSimulatorPage() {
         }
       }
 
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       const response = await fetch("http://5.78.132.169:8000/api/simulate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(request),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -527,12 +538,26 @@ export default function EVSimulatorPage() {
       }
 
       const data: ApiResponse = await response.json();
+      if ((data as { status?: string }).status === "cancelled") {
+        return; // simulation was stopped — do nothing
+      }
       setResults(data);
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        return; // user cancelled — do nothing
+      }
       setError(err instanceof Error ? err.message : "An unknown error occurred");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCancel = async () => {
+    abortControllerRef.current?.abort();
+    setLoading(false);
+    try {
+      await fetch("http://5.78.132.169:8000/api/simulate", { method: "DELETE" });
+    } catch { /* ignore */ }
   };
 
   // ---------------------------------------------------------------------------
@@ -689,6 +714,7 @@ export default function EVSimulatorPage() {
             weighting={game1Weighting}
             onWeightingChange={setGame1Weighting}
             extraPanel={game1ExtraPanel}
+            allowTargetBustRate={!game2Enabled}
           />
 
           {/* Game 2 */}
@@ -901,9 +927,16 @@ export default function EVSimulatorPage() {
           )}
         </div>
 
-        <Button onClick={handleSubmit} disabled={loading} className="w-full" size="lg">
-          {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Running Simulation...</> : "Run Simulation"}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleSubmit} disabled={loading} className="flex-1" size="lg">
+            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Running Simulation...</> : "Run Simulation"}
+          </Button>
+          {loading && (
+            <Button variant="destructive" size="lg" onClick={handleCancel}>
+              Stop
+            </Button>
+          )}
+        </div>
         {error && (
           <Alert variant="destructive" className="mt-4">
             <AlertCircle className="h-4 w-4" />

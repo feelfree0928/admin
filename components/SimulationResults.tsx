@@ -75,6 +75,16 @@ export function SimulationResults({
         </Badge>
       </div>
 
+      {/* Target Bust Rate banner */}
+      {r.optimal && (
+        <div className="p-3 rounded-md border bg-muted/40 text-sm">
+          Target Bust Rate mode — optimal bet size found:
+          <strong> {formatCurrency(r.optimal.bet_size)}</strong>
+          &nbsp;(achieved bust rate: {formatPercentage(r.optimal.bust_rate_percent)},&nbsp;
+          {r.optimal.convergence_iterations.toLocaleString()} iterations)
+        </div>
+      )}
+
       {/* Top 5 metric cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard

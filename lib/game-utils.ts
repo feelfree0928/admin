@@ -268,7 +268,7 @@ export function getDefaultHouseEdge(
     case "baccarat_tie":
       return 14.36;
     case "slots":
-      return 3.0;
+      return 4.0;
     case "digits":
       return null;
     default:

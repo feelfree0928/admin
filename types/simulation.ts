@@ -4,7 +4,7 @@
 
 export type BonusType = "cashable" | "postwager" | "cashback" | "sticky" | "freespins" | "raw";
 export type CashbackType = "on_win" | "on_loss" | "both" | "fixed_wager";
-export type SimulationMode = "standard" | "two_tier";
+export type SimulationMode = "standard" | "two_tier" | "optimal";
 export type GameName =
   | "bj"
   | "european_1s" | "european_2s" | "european_3s" | "european_4s" | "european_6s" | "european_12s" | "european_18s"
@@ -138,6 +138,12 @@ export interface SimulationResults {
   player_base_profit?: number;
   average_player_share?: number;
   player_share_pct?: number;
+  optimal?: {
+    bet_size: number;
+    bust_rate_percent: number;
+    expected_value: number;
+    convergence_iterations: number;
+  };
 }
 
 export interface ApiResponse {

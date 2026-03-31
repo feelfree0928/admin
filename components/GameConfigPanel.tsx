@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -65,6 +66,9 @@ interface GameConfigPanelProps {
 
   /** Slot for extra content next to weighting/house-edge row (e.g. bonus wagering panel) */
   extraPanel?: React.ReactNode;
+
+  /** When true, shows the "Fixed ($) / Target Bust Rate (%)" toggle on Game 1's bet size field */
+  allowTargetBustRate?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -194,6 +198,7 @@ export function GameConfigPanel({
   disabledMessage,
   switchBalance,
   extraPanel,
+  allowTargetBustRate = false,
 }: GameConfigPanelProps) {
   const hasToggle = onToggleEnabled !== undefined;
   const isDisabled = hasToggle && !enabled;
@@ -287,15 +292,55 @@ export function GameConfigPanel({
             {wideLayout && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor={`${id}BetSize`}>Bet Size ($)</Label>
-                  <Input
-                    id={`${id}BetSize`}
-                    type="number"
-                    step="0.01"
-                    value={config.betSize}
-                    onChange={(e) => config.setBetSize(Number(e.target.value))}
-                    placeholder="5.0"
-                  />
+                  {allowTargetBustRate && (
+                    <div className="flex gap-1 mb-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={config.betSizeMode === "fixed" ? "default" : "outline"}
+                        className="h-6 text-xs px-2"
+                        onClick={() => config.setBetSizeMode("fixed")}
+                      >
+                        Fixed ($)
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={config.betSizeMode === "target_bust_rate" ? "default" : "outline"}
+                        className="h-6 text-xs px-2"
+                        onClick={() => config.setBetSizeMode("target_bust_rate")}
+                      >
+                        Target Bust Rate (%)
+                      </Button>
+                    </div>
+                  )}
+                  {config.betSizeMode === "fixed" ? (
+                    <>
+                      <Label htmlFor={`${id}BetSize`}>Bet Size ($)</Label>
+                      <Input
+                        id={`${id}BetSize`}
+                        type="number"
+                        step="0.01"
+                        value={config.betSize}
+                        onChange={(e) => config.setBetSize(Number(e.target.value))}
+                        placeholder="5.0"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <Label htmlFor={`${id}TargetBustRate`}>Target Bust Rate (%)</Label>
+                      <Input
+                        id={`${id}TargetBustRate`}
+                        type="number"
+                        step="1"
+                        min={1}
+                        max={99}
+                        value={config.targetBustRate}
+                        onChange={(e) => config.setTargetBustRate(Number(e.target.value))}
+                        placeholder="90"
+                      />
+                    </>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor={`${id}TimePerBet`}>Time Per Bet (seconds)</Label>
@@ -316,15 +361,55 @@ export function GameConfigPanel({
           {!wideLayout && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor={`${id}BetSize`}>Bet Size ($)</Label>
-                <Input
-                  id={`${id}BetSize`}
-                  type="number"
-                  step="0.01"
-                  value={config.betSize}
-                  onChange={(e) => config.setBetSize(Number(e.target.value))}
-                  placeholder="1.0"
-                />
+                {allowTargetBustRate && (
+                  <div className="flex gap-1 mb-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={config.betSizeMode === "fixed" ? "default" : "outline"}
+                      className="h-6 text-xs px-2"
+                      onClick={() => config.setBetSizeMode("fixed")}
+                    >
+                      Fixed ($)
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={config.betSizeMode === "target_bust_rate" ? "default" : "outline"}
+                      className="h-6 text-xs px-2"
+                      onClick={() => config.setBetSizeMode("target_bust_rate")}
+                    >
+                      Target Bust Rate (%)
+                    </Button>
+                  </div>
+                )}
+                {config.betSizeMode === "fixed" ? (
+                  <>
+                    <Label htmlFor={`${id}BetSize`}>Bet Size ($)</Label>
+                    <Input
+                      id={`${id}BetSize`}
+                      type="number"
+                      step="0.01"
+                      value={config.betSize}
+                      onChange={(e) => config.setBetSize(Number(e.target.value))}
+                      placeholder="1.0"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Label htmlFor={`${id}TargetBustRate`}>Target Bust Rate (%)</Label>
+                    <Input
+                      id={`${id}TargetBustRate`}
+                      type="number"
+                      step="1"
+                      min={1}
+                      max={99}
+                      value={config.targetBustRate}
+                      onChange={(e) => config.setTargetBustRate(Number(e.target.value))}
+                      placeholder="90"
+                    />
+                  </>
+                )}
               </div>
               <div className="space-y-2">
                 {isSpinMode ? (
