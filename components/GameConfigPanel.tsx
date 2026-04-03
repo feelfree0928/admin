@@ -204,6 +204,30 @@ export function GameConfigPanel({
   const isDisabled = hasToggle && !enabled;
   const defaultHE = getDefaultHouseEdge(config.name);
 
+  const isFixed = config.betSizeMode === "fixed";
+  const betSizeToggle = allowTargetBustRate ? (
+    <div className="flex gap-0.5 shrink-0">
+      <Button
+        type="button"
+        size="sm"
+        variant={isFixed ? "default" : "outline"}
+        className="h-7 text-xs px-2"
+        onClick={() => config.setBetSizeMode("fixed")}
+      >
+        Fixed
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant={isFixed ? "outline" : "default"}
+        className="h-7 text-xs px-2"
+        onClick={() => config.setBetSizeMode("target_bust_rate")}
+      >
+        Target
+      </Button>
+    </div>
+  ) : null;
+
   const handleCategoryChange = (v: string) => {
     const newCat = v as GameCategory;
     config.setCategory(newCat);
@@ -292,36 +316,13 @@ export function GameConfigPanel({
             {wideLayout && (
               <>
                 <div className="space-y-2">
-                  {config.betSizeMode === "fixed" ? (
+                  {isFixed ? (
                     <>
                       <div className="flex items-center justify-between gap-2 min-h-[1.25rem]">
                         <Label htmlFor={`${id}BetSize`} className="shrink-0">
                           Bet Size ($)
                         </Label>
-                        {allowTargetBustRate && (
-                          <div className="flex gap-0.5 shrink-0">
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant={config.betSizeMode === "fixed" ? "default" : "outline"}
-                              className="h-7 text-xs px-2"
-                              onClick={() => config.setBetSizeMode("fixed")}
-                            >
-                              Fixed
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant={
-                                config.betSizeMode === "target_bust_rate" ? "default" : "outline"
-                              }
-                              className="h-7 text-xs px-2"
-                              onClick={() => config.setBetSizeMode("target_bust_rate")}
-                            >
-                              Target
-                            </Button>
-                          </div>
-                        )}
+                        {betSizeToggle}
                       </div>
                       <Input
                         id={`${id}BetSize`}
@@ -338,30 +339,7 @@ export function GameConfigPanel({
                         <Label htmlFor={`${id}TargetBustRate`} className="shrink-0">
                           Target Bust Rate (%)
                         </Label>
-                        {allowTargetBustRate && (
-                          <div className="flex gap-0.5 shrink-0">
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant={config.betSizeMode === "fixed" ? "default" : "outline"}
-                              className="h-7 text-xs px-2"
-                              onClick={() => config.setBetSizeMode("fixed")}
-                            >
-                              Fixed
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant={
-                                config.betSizeMode === "target_bust_rate" ? "default" : "outline"
-                              }
-                              className="h-7 text-xs px-2"
-                              onClick={() => config.setBetSizeMode("target_bust_rate")}
-                            >
-                              Target
-                            </Button>
-                          </div>
-                        )}
+                        {betSizeToggle}
                       </div>
                       <Input
                         id={`${id}TargetBustRate`}
@@ -395,36 +373,13 @@ export function GameConfigPanel({
           {!wideLayout && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                {config.betSizeMode === "fixed" ? (
+                {isFixed ? (
                   <>
                     <div className="flex items-center justify-between gap-2 min-h-[1.25rem]">
                       <Label htmlFor={`${id}BetSize`} className="shrink-0">
                         Bet Size ($)
                       </Label>
-                      {allowTargetBustRate && (
-                        <div className="flex gap-0.5 shrink-0">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={config.betSizeMode === "fixed" ? "default" : "outline"}
-                            className="h-7 text-xs px-2"
-                            onClick={() => config.setBetSizeMode("fixed")}
-                          >
-                            Fixed
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={
-                              config.betSizeMode === "target_bust_rate" ? "default" : "outline"
-                            }
-                            className="h-7 text-xs px-2"
-                            onClick={() => config.setBetSizeMode("target_bust_rate")}
-                          >
-                            Target
-                          </Button>
-                        </div>
-                      )}
+                      {betSizeToggle}
                     </div>
                     <Input
                       id={`${id}BetSize`}
@@ -441,30 +396,7 @@ export function GameConfigPanel({
                       <Label htmlFor={`${id}TargetBustRate`} className="shrink-0">
                         Target Bust Rate (%)
                       </Label>
-                      {allowTargetBustRate && (
-                        <div className="flex gap-0.5 shrink-0">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={config.betSizeMode === "fixed" ? "default" : "outline"}
-                            className="h-7 text-xs px-2"
-                            onClick={() => config.setBetSizeMode("fixed")}
-                          >
-                            Fixed
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={
-                              config.betSizeMode === "target_bust_rate" ? "default" : "outline"
-                            }
-                            className="h-7 text-xs px-2"
-                            onClick={() => config.setBetSizeMode("target_bust_rate")}
-                          >
-                            Target
-                          </Button>
-                        </div>
-                      )}
+                      {betSizeToggle}
                     </div>
                     <Input
                       id={`${id}TargetBustRate`}
