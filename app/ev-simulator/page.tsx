@@ -14,6 +14,7 @@ import { SettingsModal } from "@/components/SettingsModal";
 import { BonusConfigPanel } from "@/components/BonusConfigPanel";
 import { GameConfigPanel } from "@/components/GameConfigPanel";
 import { SimulationResults } from "@/components/SimulationResults";
+import { SimulationProgress } from "@/components/SimulationProgress";
 import { useGameConfig } from "@/hooks/useGameConfig";
 import {
   getTimePerBetCategory,
@@ -30,6 +31,7 @@ import type {
   BonusConfig,
   SimulationRequest,
   ApiResponse,
+  SimulationProgress as SimulationProgressData,
 } from "@/types/simulation";
 
 // ============================================================================
@@ -114,6 +116,7 @@ export default function EVSimulatorPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<ApiResponse | null>(null);
+  const [progress, setProgress] = useState<SimulationProgressData | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [backendStatus, setBackendStatus] = useState<"checking" | "online" | "offline">("checking");
   const [globalConfig, setGlobalConfig] = useState<any>(null);
@@ -168,6 +171,21 @@ export default function EVSimulatorPage() {
     loadConfig();
   }, []);
 
+  // Poll for simulation progress while loading
+  useEffect(() => {
+    if (!loading) { setProgress(null); return; }
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("http://5.78.132.169:8000/api/simulate/progress");
+        if (res.ok) {
+          const data: SimulationProgressData = await res.json();
+          if (data.phase !== "idle") setProgress(data);
+        }
+      } catch { /* backend unreachable — skip this tick */ }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [loading]);
+
   const getDefaultTimePerBet = (gameName: GameName): number => {
     if (globalConfig?.defaults?.timePerBet) {
       const category = getTimePerBetCategory(gameName);
@@ -198,6 +216,13 @@ export default function EVSimulatorPage() {
       setGame2Enabled(false);
     }
   }, [bonusType, game2Enabled]);
+
+  // Target bust rate is only for deposit-style bonuses; force fixed bet for postwager / cashback / raw
+  useEffect(() => {
+    if (bonusType === "postwager" || bonusType === "cashback" || bonusType === "raw") {
+      game1.setBetSizeMode("fixed");
+    }
+  }, [bonusType, game1.setBetSizeMode]);
 
   // ---------------------------------------------------------------------------
   // Calculated value effects
@@ -385,7 +410,11 @@ export default function EVSimulatorPage() {
         }
       }
 
-      const isTargetBustRate = game1.betSizeMode === "target_bust_rate";
+      const isTargetBustRate =
+        game1.betSizeMode === "target_bust_rate" &&
+        bonusType !== "postwager" &&
+        bonusType !== "cashback" &&
+        bonusType !== "raw";
 
       const game1Config: GameConfig = {
         name: game1.name,
@@ -714,7 +743,12 @@ export default function EVSimulatorPage() {
             weighting={game1Weighting}
             onWeightingChange={setGame1Weighting}
             extraPanel={game1ExtraPanel}
-            allowTargetBustRate={!game2Enabled}
+            allowTargetBustRate={
+              !game2Enabled &&
+              bonusType !== "postwager" &&
+              bonusType !== "cashback" &&
+              bonusType !== "raw"
+            }
           />
 
           {/* Game 2 */}
@@ -944,6 +978,9 @@ export default function EVSimulatorPage() {
           </Alert>
         )}
       </div>
+
+      {/* Live progress */}
+      {loading && <SimulationProgress progress={progress} />}
 
       {/* Results */}
       {results && (

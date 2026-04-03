@@ -153,3 +153,24 @@ export interface ApiResponse {
   results: SimulationResults;
   warnings: string[];
 }
+
+export interface SimulationProgress {
+  phase: "idle" | "searching" | "simulating";
+  progress: number;
+  sessions_completed?: number;
+  total_sessions?: number;
+
+  // Search phase
+  search_iteration?: number;
+  search_max_iterations?: number;
+  search_bet_lo?: number;
+  search_bet_hi?: number;
+  search_bust_rate?: number;
+  search_bet_mid?: number;
+
+  // Simulation phase intermediate results
+  intermediate_ev?: number;
+  intermediate_bust_rate?: number;
+  intermediate_avg_time_min?: number;
+  intermediate_cash_per_hour?: number;
+}
