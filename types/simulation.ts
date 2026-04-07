@@ -96,6 +96,7 @@ export interface SimulationRequest {
   bonus_game2?: GameConfig;
   pre_coverplay?: CoverplayConfig;
   post_coverplay?: CoverplayConfig;
+  sim_id?: string;
   simulation: {
     num_sessions: number;
     random_seed?: number | null;
