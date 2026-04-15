@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, AlertCircle, CheckCircle2, XCircle, Settings, Lock, LockOpen, ClipboardList } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2, XCircle, Settings, Lock, LockOpen, ClipboardList, Copy, Check } from "lucide-react";
 import { SettingsModal } from "@/components/SettingsModal";
 import { BonusConfigPanel } from "@/components/BonusConfigPanel";
 import { GameConfigPanel } from "@/components/GameConfigPanel";
@@ -128,6 +128,7 @@ export default function EVSimulatorPage() {
   const [playerProfitEnabled, setPlayerProfitEnabled] = useState<boolean>(false);
   const [playerBaseProfit, setPlayerBaseProfit] = useState<number>(5);
   const [playerBonusPct, setPlayerBonusPct] = useState<number>(1);
+  const [curlCopied, setCurlCopied] = useState<boolean>(false);
 
   const effectiveSimCount = simCountLocked
     ? (globalConfig?.defaults?.numSessions ?? 1000000)
@@ -341,6 +342,214 @@ export default function EVSimulatorPage() {
   };
 
   // ---------------------------------------------------------------------------
+  // Build request object from current form state
+  // ---------------------------------------------------------------------------
+  const buildRequest = (simId: string): SimulationRequest => {
+    const bonusConfig: BonusConfig = {
+      type: bonusType,
+      deposit: bonusType === "cashback" && cashbackType === "fixed_wager" ? 100 : deposit,
+      bonus_amount: bonusAmount,
+    };
+
+    if (bonusType !== "freespins" && bonusType !== "cashback") bonusConfig.wagering = wagering;
+
+    if (bonusType === "cashback") {
+      bonusConfig.cashback_type = cashbackType;
+      if (cashbackType === "fixed_wager") {
+        bonusConfig.wager_target = wagerTarget;
+        bonusConfig.cashback_rate = cashbackRate;
+        bonusConfig.cashback_cap = cashbackCap;
+        bonusConfig.cashback_as_bonus = cashbackAsBonus;
+        if (cashbackAsBonus && cashbackWageringRequirement > 0)
+          bonusConfig.cashback_wagering_requirement = cashbackWageringRequirement;
+      } else {
+        bonusConfig.target_balance = targetBalance;
+        bonusConfig.cashback_amount = cashbackAmount;
+      }
+    }
+
+    if (bonusType === "sticky" && maxCashout !== null && maxCashout > 0)
+      bonusConfig.max_cashout = maxCashout;
+
+    if (bonusType === "freespins") {
+      bonusConfig.freespins_count = freespinsCount;
+      bonusConfig.freespins_bet_size = freespinsBetSize;
+      bonusConfig.freespins_rollover = freespinsRollover;
+      if (freespinsRollover) bonusConfig.freespins_rollover_multiplier = freespinsRolloverMultiplier;
+    }
+
+    if (bonusType === "postwager") {
+      bonusConfig.apply_bonus_play = applyBonusPlay;
+      if (applyBonusPlay) {
+        bonusConfig.use_bonus_wagering_multiplier = false;
+        bonusConfig.bonus_wagering_requirement = bonusWageringRequirement;
+      }
+    }
+
+    if (bonusType === "cashback") {
+      bonusConfig.apply_bonus_play = applyCashbackBonusPlay;
+      if (applyCashbackBonusPlay) {
+        if (cashbackType === "fixed_wager") {
+          bonusConfig.use_bonus_wagering_multiplier = true;
+          bonusConfig.bonus_wagering_multiplier = cashbackBonusWageringMultiplier;
+        } else {
+          bonusConfig.use_bonus_wagering_multiplier = false;
+          bonusConfig.bonus_wagering_requirement = cashbackBonusWageringRequirement;
+        }
+      }
+    }
+
+    const isTargetBustRate =
+      game1.betSizeMode === "target_bust_rate" &&
+      bonusType !== "postwager" &&
+      bonusType !== "cashback" &&
+      bonusType !== "raw";
+
+    const game1Config: GameConfig = {
+      name: game1.name,
+      bet_size: isTargetBustRate ? 1.0 : game1.betSize,
+      time_per_bet: game1.timePerBet,
+      game_weighting: game1Weighting,
+    };
+    if (game1.name === "slots" && game1.risk) game1Config.risk = game1.risk;
+    if (game1.name === "digits" && game1.digitsType) game1Config.digits_type = game1.digitsType;
+    if (game1.houseEdge !== null) game1Config.house_edge = game1.houseEdge;
+
+    let game2Config: GameConfig | null = null;
+    if (game2Enabled) {
+      game2Config = {
+        name: game2.name,
+        bet_size: game2.betSize,
+        time_per_bet: game2.timePerBet,
+        game_weighting: game2Weighting,
+        switch_balance: game2SwitchBalance,
+      };
+      if (game2.name === "slots" && game2.risk) game2Config.risk = game2.risk;
+      if (game2.name === "digits" && game2.digitsType) game2Config.digits_type = game2.digitsType;
+      if (game2.houseEdge !== null) game2Config.house_edge = game2.houseEdge;
+    }
+
+    let preCoverplayConfig: CoverplayConfig | undefined;
+    if (preCoverplayEnabled) {
+      preCoverplayConfig = {
+        enabled: true,
+        game: preCoverplay.name,
+        bet_size: preCoverplay.betSize,
+        num_spins: preCoverplayNumSpins,
+      };
+      if (preCoverplay.name === "slots" && preCoverplay.risk) preCoverplayConfig.risk = preCoverplay.risk;
+      if (preCoverplay.houseEdge !== null) preCoverplayConfig.house_edge = preCoverplay.houseEdge;
+    }
+
+    let postCoverplayConfig: CoverplayConfig | undefined;
+    if (postCoverplayEnabled) {
+      postCoverplayConfig = {
+        enabled: true,
+        game: postCoverplay.name,
+        bet_size: postCoverplay.betSize,
+        num_spins: postCoverplayNumSpins,
+      };
+      if (postCoverplay.name === "slots" && postCoverplay.risk) postCoverplayConfig.risk = postCoverplay.risk;
+      if (postCoverplay.houseEdge !== null) postCoverplayConfig.house_edge = postCoverplay.houseEdge;
+    }
+
+    const mode: SimulationMode = isTargetBustRate ? "optimal" : (game2Enabled ? "two_tier" : "standard");
+
+    const request: SimulationRequest = {
+      mode,
+      sim_id: simId,
+      bonus: bonusConfig,
+      game1: game1Config,
+      simulation: {
+        num_sessions: effectiveSimCount,
+        random_seed: randomSeed,
+        ...(playerProfitEnabled && {
+          player_profit_enabled: true,
+          player_base_profit: playerBaseProfit,
+          player_bonus_pct: playerBonusPct / 100,
+        }),
+      },
+    };
+
+    if (isTargetBustRate) {
+      request.optimization = { target_bust_rate: game1.targetBustRate };
+    }
+
+    if (game2Config) request.game2 = game2Config;
+    if (preCoverplayConfig) request.pre_coverplay = preCoverplayConfig;
+    if (postCoverplayConfig) request.post_coverplay = postCoverplayConfig;
+
+    if (bonusType === "postwager" && applyBonusPlay) {
+      const bg1: GameConfig = {
+        name: bonusGame1.name,
+        bet_size: bonusGame1.betSize,
+        time_per_bet: bonusGame1.timePerBet,
+        game_weighting: bonusGame1.contribution,
+      };
+      if (bonusGame1.name === "slots" && bonusGame1.risk) bg1.risk = bonusGame1.risk;
+      if (bonusGame1.name === "digits" && bonusGame1.digitsType) bg1.digits_type = bonusGame1.digitsType;
+      if (bonusGame1.houseEdge !== null) bg1.house_edge = bonusGame1.houseEdge;
+      request.bonus_game1 = bg1;
+
+      if (bonusGame2Enabled) {
+        const bg2: GameConfig = {
+          name: bonusGame2.name,
+          bet_size: bonusGame2.betSize,
+          time_per_bet: bonusGame2.timePerBet,
+          game_weighting: bonusGame2.contribution,
+          switch_balance: bonusGame2SwitchBalance,
+        };
+        if (bonusGame2.name === "slots" && bonusGame2.risk) bg2.risk = bonusGame2.risk;
+        if (bonusGame2.name === "digits" && bonusGame2.digitsType) bg2.digits_type = bonusGame2.digitsType;
+        if (bonusGame2.houseEdge !== null) bg2.house_edge = bonusGame2.houseEdge;
+        request.bonus_game2 = bg2;
+      }
+    }
+
+    if (bonusType === "cashback" && applyCashbackBonusPlay) {
+      const cbg1: GameConfig = {
+        name: cashbackBonusGame1.name,
+        bet_size: cashbackBonusGame1.betSize,
+        time_per_bet: cashbackBonusGame1.timePerBet,
+        game_weighting: cashbackBonusGame1.contribution,
+      };
+      if (cashbackBonusGame1.name === "slots" && cashbackBonusGame1.risk) cbg1.risk = cashbackBonusGame1.risk;
+      if (cashbackBonusGame1.name === "digits" && cashbackBonusGame1.digitsType) cbg1.digits_type = cashbackBonusGame1.digitsType;
+      if (cashbackBonusGame1.houseEdge !== null) cbg1.house_edge = cashbackBonusGame1.houseEdge;
+      request.bonus_game1 = cbg1;
+
+      if (cashbackBonusGame2Enabled) {
+        const cbg2: GameConfig = {
+          name: cashbackBonusGame2.name,
+          bet_size: cashbackBonusGame2.betSize,
+          time_per_bet: cashbackBonusGame2.timePerBet,
+          game_weighting: cashbackBonusGame2.contribution,
+          switch_balance: cashbackBonusGame2SwitchBalance,
+        };
+        if (cashbackBonusGame2.name === "slots" && cashbackBonusGame2.risk) cbg2.risk = cashbackBonusGame2.risk;
+        if (cashbackBonusGame2.name === "digits" && cashbackBonusGame2.digitsType) cbg2.digits_type = cashbackBonusGame2.digitsType;
+        if (cashbackBonusGame2.houseEdge !== null) cbg2.house_edge = cashbackBonusGame2.houseEdge;
+        request.bonus_game2 = cbg2;
+      }
+    }
+
+    return request;
+  };
+
+  // ---------------------------------------------------------------------------
+  // Copy cURL command
+  // ---------------------------------------------------------------------------
+  const handleCopyCurl = () => {
+    const request = buildRequest("curl-preview");
+    const body = JSON.stringify(request, null, 2);
+    const cmd = `curl -X POST http://5.78.132.169:8000/api/simulate \\\n  -H "Content-Type: application/json" \\\n  -d '${body}'`;
+    navigator.clipboard.writeText(cmd).then(() => {
+      setCurlCopied(true);
+      setTimeout(() => setCurlCopied(false), 2000);
+    });
+  };
+
+  // ---------------------------------------------------------------------------
   // API call
   // ---------------------------------------------------------------------------
   const handleSubmit = async () => {
@@ -359,195 +568,9 @@ export default function EVSimulatorPage() {
     }
 
     try {
-      const bonusConfig: BonusConfig = {
-        type: bonusType,
-        deposit: bonusType === "cashback" && cashbackType === "fixed_wager" ? 100 : deposit,
-        bonus_amount: bonusAmount,
-      };
-
-      if (bonusType !== "freespins" && bonusType !== "cashback") bonusConfig.wagering = wagering;
-
-      if (bonusType === "cashback") {
-        bonusConfig.cashback_type = cashbackType;
-        if (cashbackType === "fixed_wager") {
-          bonusConfig.wager_target = wagerTarget;
-          bonusConfig.cashback_rate = cashbackRate;
-          bonusConfig.cashback_cap = cashbackCap;
-          bonusConfig.cashback_as_bonus = cashbackAsBonus;
-          if (cashbackAsBonus && cashbackWageringRequirement > 0)
-            bonusConfig.cashback_wagering_requirement = cashbackWageringRequirement;
-        } else {
-          bonusConfig.target_balance = targetBalance;
-          bonusConfig.cashback_amount = cashbackAmount;
-        }
-      }
-
-      if (bonusType === "sticky" && maxCashout !== null && maxCashout > 0)
-        bonusConfig.max_cashout = maxCashout;
-
-      if (bonusType === "freespins") {
-        bonusConfig.freespins_count = freespinsCount;
-        bonusConfig.freespins_bet_size = freespinsBetSize;
-        bonusConfig.freespins_rollover = freespinsRollover;
-        if (freespinsRollover) bonusConfig.freespins_rollover_multiplier = freespinsRolloverMultiplier;
-      }
-
-      if (bonusType === "postwager") {
-        bonusConfig.apply_bonus_play = applyBonusPlay;
-        if (applyBonusPlay) {
-          bonusConfig.use_bonus_wagering_multiplier = false;
-          bonusConfig.bonus_wagering_requirement = bonusWageringRequirement;
-        }
-      }
-
-      if (bonusType === "cashback") {
-        bonusConfig.apply_bonus_play = applyCashbackBonusPlay;
-        if (applyCashbackBonusPlay) {
-          if (cashbackType === "fixed_wager") {
-            bonusConfig.use_bonus_wagering_multiplier = true;
-            bonusConfig.bonus_wagering_multiplier = cashbackBonusWageringMultiplier;
-          } else {
-            bonusConfig.use_bonus_wagering_multiplier = false;
-            bonusConfig.bonus_wagering_requirement = cashbackBonusWageringRequirement;
-          }
-        }
-      }
-
-      const isTargetBustRate =
-        game1.betSizeMode === "target_bust_rate" &&
-        bonusType !== "postwager" &&
-        bonusType !== "cashback" &&
-        bonusType !== "raw";
-
-      const game1Config: GameConfig = {
-        name: game1.name,
-        bet_size: isTargetBustRate ? 1.0 : game1.betSize,
-        time_per_bet: game1.timePerBet,
-        game_weighting: game1Weighting,
-      };
-      if (game1.name === "slots" && game1.risk) game1Config.risk = game1.risk;
-      if (game1.name === "digits" && game1.digitsType) game1Config.digits_type = game1.digitsType;
-      if (game1.houseEdge !== null) game1Config.house_edge = game1.houseEdge;
-
-      let game2Config: GameConfig | null = null;
-      if (game2Enabled) {
-        game2Config = {
-          name: game2.name,
-          bet_size: game2.betSize,
-          time_per_bet: game2.timePerBet,
-          game_weighting: game2Weighting,
-          switch_balance: game2SwitchBalance,
-        };
-        if (game2.name === "slots" && game2.risk) game2Config.risk = game2.risk;
-        if (game2.name === "digits" && game2.digitsType) game2Config.digits_type = game2.digitsType;
-        if (game2.houseEdge !== null) game2Config.house_edge = game2.houseEdge;
-      }
-
-      let preCoverplayConfig: CoverplayConfig | undefined;
-      if (preCoverplayEnabled) {
-        preCoverplayConfig = {
-          enabled: true,
-          game: preCoverplay.name,
-          bet_size: preCoverplay.betSize,
-          num_spins: preCoverplayNumSpins,
-        };
-        if (preCoverplay.name === "slots" && preCoverplay.risk) preCoverplayConfig.risk = preCoverplay.risk;
-        if (preCoverplay.houseEdge !== null) preCoverplayConfig.house_edge = preCoverplay.houseEdge;
-      }
-
-      let postCoverplayConfig: CoverplayConfig | undefined;
-      if (postCoverplayEnabled) {
-        postCoverplayConfig = {
-          enabled: true,
-          game: postCoverplay.name,
-          bet_size: postCoverplay.betSize,
-          num_spins: postCoverplayNumSpins,
-        };
-        if (postCoverplay.name === "slots" && postCoverplay.risk) postCoverplayConfig.risk = postCoverplay.risk;
-        if (postCoverplay.houseEdge !== null) postCoverplayConfig.house_edge = postCoverplay.houseEdge;
-      }
-
-      const mode: SimulationMode = isTargetBustRate ? "optimal" : (game2Enabled ? "two_tier" : "standard");
       const currentSimId = randomSimulationId();
       simIdRef.current = currentSimId;
-
-      const request: SimulationRequest = {
-        mode,
-        sim_id: currentSimId,
-        bonus: bonusConfig,
-        game1: game1Config,
-        simulation: {
-          num_sessions: effectiveSimCount,
-          random_seed: randomSeed,
-          ...(playerProfitEnabled && {
-            player_profit_enabled: true,
-            player_base_profit: playerBaseProfit,
-            player_bonus_pct: playerBonusPct / 100,
-          }),
-        },
-      };
-
-      if (isTargetBustRate) {
-        request.optimization = { target_bust_rate: game1.targetBustRate };
-      }
-
-      if (game2Config) request.game2 = game2Config;
-      if (preCoverplayConfig) request.pre_coverplay = preCoverplayConfig;
-      if (postCoverplayConfig) request.post_coverplay = postCoverplayConfig;
-
-      if (bonusType === "postwager" && applyBonusPlay) {
-        const bg1: GameConfig = {
-          name: bonusGame1.name,
-          bet_size: bonusGame1.betSize,
-          time_per_bet: bonusGame1.timePerBet,
-          game_weighting: bonusGame1.contribution,
-        };
-        if (bonusGame1.name === "slots" && bonusGame1.risk) bg1.risk = bonusGame1.risk;
-        if (bonusGame1.name === "digits" && bonusGame1.digitsType) bg1.digits_type = bonusGame1.digitsType;
-        if (bonusGame1.houseEdge !== null) bg1.house_edge = bonusGame1.houseEdge;
-        request.bonus_game1 = bg1;
-
-        if (bonusGame2Enabled) {
-          const bg2: GameConfig = {
-            name: bonusGame2.name,
-            bet_size: bonusGame2.betSize,
-            time_per_bet: bonusGame2.timePerBet,
-            game_weighting: bonusGame2.contribution,
-            switch_balance: bonusGame2SwitchBalance,
-          };
-          if (bonusGame2.name === "slots" && bonusGame2.risk) bg2.risk = bonusGame2.risk;
-          if (bonusGame2.name === "digits" && bonusGame2.digitsType) bg2.digits_type = bonusGame2.digitsType;
-          if (bonusGame2.houseEdge !== null) bg2.house_edge = bonusGame2.houseEdge;
-          request.bonus_game2 = bg2;
-        }
-      }
-
-      if (bonusType === "cashback" && applyCashbackBonusPlay) {
-        const cbg1: GameConfig = {
-          name: cashbackBonusGame1.name,
-          bet_size: cashbackBonusGame1.betSize,
-          time_per_bet: cashbackBonusGame1.timePerBet,
-          game_weighting: cashbackBonusGame1.contribution,
-        };
-        if (cashbackBonusGame1.name === "slots" && cashbackBonusGame1.risk) cbg1.risk = cashbackBonusGame1.risk;
-        if (cashbackBonusGame1.name === "digits" && cashbackBonusGame1.digitsType) cbg1.digits_type = cashbackBonusGame1.digitsType;
-        if (cashbackBonusGame1.houseEdge !== null) cbg1.house_edge = cashbackBonusGame1.houseEdge;
-        request.bonus_game1 = cbg1;
-
-        if (cashbackBonusGame2Enabled) {
-          const cbg2: GameConfig = {
-            name: cashbackBonusGame2.name,
-            bet_size: cashbackBonusGame2.betSize,
-            time_per_bet: cashbackBonusGame2.timePerBet,
-            game_weighting: cashbackBonusGame2.contribution,
-            switch_balance: cashbackBonusGame2SwitchBalance,
-          };
-          if (cashbackBonusGame2.name === "slots" && cashbackBonusGame2.risk) cbg2.risk = cashbackBonusGame2.risk;
-          if (cashbackBonusGame2.name === "digits" && cashbackBonusGame2.digitsType) cbg2.digits_type = cashbackBonusGame2.digitsType;
-          if (cashbackBonusGame2.houseEdge !== null) cbg2.house_edge = cashbackBonusGame2.houseEdge;
-          request.bonus_game2 = cbg2;
-        }
-      }
+      const request = buildRequest(currentSimId);
 
       const controller = new AbortController();
       abortControllerRef.current = controller;
@@ -974,6 +997,9 @@ export default function EVSimulatorPage() {
         <div className="flex gap-2">
           <Button onClick={handleSubmit} disabled={loading} className="flex-1" size="lg">
             {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Running Simulation...</> : "Run Simulation"}
+          </Button>
+          <Button variant="outline" size="lg" onClick={handleCopyCurl} disabled={loading} title="Copy cURL command">
+            {curlCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           </Button>
           {loading && (
             <Button variant="destructive" size="lg" onClick={handleCancel}>
