@@ -543,10 +543,33 @@ export default function EVSimulatorPage() {
     const request = buildRequest("curl-preview");
     const body = JSON.stringify(request, null, 2);
     const cmd = `curl -X POST http://5.78.132.169:8000/api/simulate \\\n  -H "Content-Type: application/json" \\\n  -d '${body}'`;
-    navigator.clipboard.writeText(cmd).then(() => {
+
+    const onSuccess = () => {
       setCurlCopied(true);
       setTimeout(() => setCurlCopied(false), 2000);
-    });
+    };
+
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(cmd).then(onSuccess).catch(() => fallbackCopy(cmd, onSuccess));
+    } else {
+      fallbackCopy(cmd, onSuccess);
+    }
+  };
+
+  const fallbackCopy = (text: string, onSuccess: () => void) => {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      document.execCommand("copy");
+      onSuccess();
+    } finally {
+      document.body.removeChild(ta);
+    }
   };
 
   // ---------------------------------------------------------------------------
